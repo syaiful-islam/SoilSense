@@ -91,7 +91,7 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.usb.serial.for.android)
+    implementation(libs.usbserial.android)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test)
