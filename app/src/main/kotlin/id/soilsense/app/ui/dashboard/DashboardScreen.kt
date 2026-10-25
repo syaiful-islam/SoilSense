@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -31,16 +33,20 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -78,11 +84,19 @@ fun DashboardScreen(
 ) {
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            )
+        },
     ) { innerPadding ->
         val isConnected = uiState.connection is ConnectionState.Connected
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 160.dp),
+            columns = GridCells.Adaptive(minSize = 150.dp),
             modifier = Modifier.fillMaxSize().padding(innerPadding),
             contentPadding = PaddingValues(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -296,35 +310,55 @@ private fun MetricTile(metric: Metric) {
     val label = stringResource(metric.label)
     val unavailable = stringResource(R.string.value_unavailable)
     Card(
+        colors = CardDefaults.cardColors(containerColor = metric.color, contentColor = Color.White),
         modifier = Modifier
             .fillMaxWidth()
-            // Read as one phrase by TalkBack, e.g. "Soil moisture, 46.4 %".
+            .heightIn(min = 128.dp)
+            // Read as one phrase by TalkBack, e.g. "Soil moisture, %, 46.4".
             .semantics(mergeDescendants = true) {},
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp)) {
             Text(
-                label,
+                text = if (unit != null) "$label  $unit" else label,
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(value ?: unavailable, style = MaterialTheme.typography.headlineMedium)
-                if (value != null && unit != null) {
-                    Spacer(Modifier.width(4.dp))
-                    Text(unit, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 4.dp))
-                }
-            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = value ?: unavailable,
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                modifier = Modifier.fillMaxWidth(),
+            )
             if (metric.notSupported) {
                 Text(
                     stringResource(R.string.value_not_supported),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
     }
+}
+
+/**
+ * One fixed colour per parameter so readings are recognisable at a glance in the field.
+ * All shades keep white text at WCAG AA contrast (≥ 4.5:1) in light and dark themes.
+ */
+private object MetricColors {
+    val Temperature = Color(0xFF2E7D32)
+    val Moisture = Color(0xFF1565C0)
+    val Conductivity = Color(0xFF6A1B9A)
+    val Ph = Color(0xFFBF360C)
+    val Nitrogen = Color(0xFFC2185B)
+    val Phosphorus = Color(0xFF00695C)
+    val Potassium = Color(0xFF283593)
+    val Salinity = Color(0xFF5D4037)
+    val Tds = Color(0xFF00727C)
 }
 
 @Composable
@@ -340,22 +374,48 @@ private data class Metric(
     @param:StringRes val label: Int,
     val value: Number?,
     @param:StringRes val unit: Int?,
+    val color: Color,
     val notSupported: Boolean = false,
 )
 
 private fun metricsOf(reading: SoilReading?): List<Metric> = listOf(
-    Metric("moisture", R.string.metric_moisture, reading?.moisturePercent, R.string.unit_percent),
-    Metric("temperature", R.string.metric_temperature, reading?.temperatureCelsius, R.string.unit_celsius),
-    Metric("conductivity", R.string.metric_conductivity, reading?.conductivityMicroSiemensPerCm, R.string.unit_us_cm),
-    Metric("ph", R.string.metric_ph, reading?.ph, null),
-    Metric("nitrogen", R.string.metric_nitrogen, reading?.nitrogenMgPerKg, R.string.unit_mg_kg),
-    Metric("phosphorus", R.string.metric_phosphorus, reading?.phosphorusMgPerKg, R.string.unit_mg_kg),
-    Metric("potassium", R.string.metric_potassium, reading?.potassiumMgPerKg, R.string.unit_mg_kg),
+    Metric(
+        "temperature",
+        R.string.metric_temperature,
+        reading?.temperatureCelsius,
+        R.string.unit_celsius,
+        MetricColors.Temperature,
+    ),
+    Metric("moisture", R.string.metric_moisture, reading?.moisturePercent, R.string.unit_percent, MetricColors.Moisture),
+    Metric(
+        "conductivity",
+        R.string.metric_conductivity,
+        reading?.conductivityMicroSiemensPerCm,
+        R.string.unit_us_cm,
+        MetricColors.Conductivity,
+    ),
+    Metric("ph", R.string.metric_ph, reading?.ph, null, MetricColors.Ph),
+    Metric("nitrogen", R.string.metric_nitrogen, reading?.nitrogenMgPerKg, R.string.unit_mg_kg, MetricColors.Nitrogen),
+    Metric(
+        "phosphorus",
+        R.string.metric_phosphorus,
+        reading?.phosphorusMgPerKg,
+        R.string.unit_mg_kg,
+        MetricColors.Phosphorus,
+    ),
+    Metric(
+        "potassium",
+        R.string.metric_potassium,
+        reading?.potassiumMgPerKg,
+        R.string.unit_mg_kg,
+        MetricColors.Potassium,
+    ),
     Metric(
         "salinity",
         R.string.metric_salinity,
         reading?.salinityMgPerL,
         R.string.unit_mg_l,
+        MetricColors.Salinity,
         notSupported = reading != null && reading.salinityMgPerL == null,
     ),
     Metric(
@@ -363,6 +423,7 @@ private fun metricsOf(reading: SoilReading?): List<Metric> = listOf(
         R.string.metric_tds,
         reading?.tdsMgPerL,
         R.string.unit_mg_l,
+        MetricColors.Tds,
         notSupported = reading != null && reading.tdsMgPerL == null,
     ),
 )
