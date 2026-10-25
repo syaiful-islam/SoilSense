@@ -29,7 +29,8 @@ class DashboardViewModelTest {
     private val sensor = FakeSoilSensorRepository()
     private val settings = FakeSettingsRepository()
     private val history = FakeHistoryRepository()
-    private val viewModel = DashboardViewModel(sensor, settings, history)
+    // Created lazily: field initializers run before MainDispatcherRule installs the test Main dispatcher.
+    private val viewModel by lazy { DashboardViewModel(sensor, settings, history) }
 
     @Test
     fun `initial state mirrors repository connection`() = runTest {

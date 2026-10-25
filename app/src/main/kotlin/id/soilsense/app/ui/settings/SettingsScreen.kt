@@ -137,15 +137,16 @@ private fun SectionTitle(titleRes: Int) {
 private fun SlaveIdField(currentSlaveId: Int, onSave: (Int) -> Unit) {
     // Re-seeded whenever the stored value changes (e.g. after "use detected ID").
     var text by rememberSaveable(currentSlaveId) { mutableStateOf(currentSlaveId.toString()) }
-    val parsed = text.toIntOrNull()
-    val isValid = parsed != null && parsed in SensorSettings.SLAVE_ID_RANGE
-    val canSave = isValid && parsed != currentSlaveId
+    val validId = text.toIntOrNull()?.takeIf { it in SensorSettings.SLAVE_ID_RANGE }
+    val isValid = validId != null
+    val canSave = validId != null && validId != currentSlaveId
     val focusManager = LocalFocusManager.current
     val save = {
-        if (canSave && parsed != null) {
-            onSave(parsed)
+        validId?.takeIf { it != currentSlaveId }?.let { id ->
+            onSave(id)
             focusManager.clearFocus()
         }
+        Unit
     }
 
     Row(verticalAlignment = Alignment.Top) {

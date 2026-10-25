@@ -22,7 +22,8 @@ class SettingsViewModelTest {
 
     private val sensor = FakeSoilSensorRepository()
     private val settings = FakeSettingsRepository()
-    private val viewModel = SettingsViewModel(settings, sensor)
+    // Created lazily: field initializers run before MainDispatcherRule installs the test Main dispatcher.
+    private val viewModel by lazy { SettingsViewModel(settings, sensor) }
 
     @Test
     fun `detected id can be applied to settings`() = runTest {
