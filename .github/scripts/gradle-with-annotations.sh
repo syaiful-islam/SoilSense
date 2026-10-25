@@ -13,6 +13,10 @@ if [ "$status" -ne 0 ]; then
     | grep -v -E '^\s+at (org\.gradle|java\.|jdk\.|sun\.|kotlin\.coroutines|worker\.org\.gradle)' \
     | awk '!seen[$0]++' \
     | head -n 400 > "$log.errors"
+  # Lint prints only the first issue to the console; append every error from its text report.
+  for report in app/build/intermediates/lint_intermediate_text_report/*/*/lint-results-*.txt; do
+    [ -f "$report" ] && grep -E -A4 ': Error: ' "$report" >> "$log.errors"
+  done
 
   # GitHub keeps at most 10 error annotations per step; send the lines in up to 9 chunks.
   split -n l/9 "$log.errors" "$log.chunk." 2>/dev/null || cp "$log.errors" "$log.chunk.aa"

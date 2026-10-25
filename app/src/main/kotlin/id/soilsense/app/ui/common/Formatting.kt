@@ -23,7 +23,7 @@ fun rememberTimeFormatter(skeleton: String): (Long) -> String {
 }
 
 @Composable
-fun currentLocale(): Locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+fun currentLocale(): Locale = LocalConfiguration.current.locales[0]
 
 /** Title and troubleshooting hint for a failed poll. */
 data class ReadErrorText(@param:StringRes val title: Int, @param:StringRes val hint: Int, val code: Int? = null)
