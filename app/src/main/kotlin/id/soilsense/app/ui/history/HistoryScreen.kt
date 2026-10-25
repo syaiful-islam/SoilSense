@@ -223,7 +223,7 @@ private fun HistoryRow(item: RecordedReading, timestamp: String) {
 @Preview(showBackground = true)
 @Composable
 private fun HistoryScreenPreview() {
-    val reading = SoilReading(46.4, 33.2, 44, 6.8, 32, 88, 104, 24, 22)
+    val reading = SoilReading(46.4, 33.2, 44, 6.8, 32, 88, 104)
     SoilSenseTheme(dynamicColor = false) {
         HistoryScreen(
             uiState = HistoryUiState.Loaded(

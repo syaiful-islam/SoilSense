@@ -1,10 +1,6 @@
 package id.soilsense.modbus.soil
 
-/**
- * One decoded measurement from the CWT-SOIL-NPKPHCTH-S (7-in-1) probe.
- *
- * [salinityMgPerL] and [tdsMgPerL] are null when the firmware only exposes registers 0x0000–0x0006.
- */
+/** One decoded measurement from the CWT-SOIL-NPKPHCTH-S probe (7 parameters, as printed on its label). */
 public data class SoilReading(
     val moisturePercent: Double,
     val temperatureCelsius: Double,
@@ -13,6 +9,4 @@ public data class SoilReading(
     val nitrogenMgPerKg: Int,
     val phosphorusMgPerKg: Int,
     val potassiumMgPerKg: Int,
-    val salinityMgPerL: Int?,
-    val tdsMgPerL: Int?,
 )

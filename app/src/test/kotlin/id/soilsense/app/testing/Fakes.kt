@@ -29,8 +29,6 @@ val testReading = SoilReading(
     nitrogenMgPerKg = 32,
     phosphorusMgPerKg = 88,
     potassiumMgPerKg = 104,
-    salinityMgPerL = null,
-    tdsMgPerL = null,
 )
 
 class FakeSoilSensorRepository : SoilSensorRepository {

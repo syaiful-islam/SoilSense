@@ -27,8 +27,6 @@ class CsvFormatter(private val timeZone: TimeZone = TimeZone.getDefault()) {
             r.nitrogenMgPerKg.toString(),
             r.phosphorusMgPerKg.toString(),
             r.potassiumMgPerKg.toString(),
-            r.salinityMgPerL?.toString().orEmpty(),
-            r.tdsMgPerL?.toString().orEmpty(),
         ).joinToString(",")
     }
 
@@ -41,6 +39,6 @@ class CsvFormatter(private val timeZone: TimeZone = TimeZone.getDefault()) {
     companion object {
         const val HEADER: String =
             "timestamp,moisture_percent,temperature_celsius,conductivity_us_cm,ph," +
-                "nitrogen_mg_kg,phosphorus_mg_kg,potassium_mg_kg,salinity_mg_l,tds_mg_l"
+                "nitrogen_mg_kg,phosphorus_mg_kg,potassium_mg_kg"
     }
 }

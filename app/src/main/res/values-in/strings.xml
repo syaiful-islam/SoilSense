@@ -44,9 +44,6 @@
     <string name="metric_nitrogen">Nitrogen (N)</string>
     <string name="metric_phosphorus">Fosfor (P)</string>
     <string name="metric_potassium">Kalium (K)</string>
-    <string name="metric_salinity">Salinitas</string>
-    <string name="metric_tds">TDS</string>
-    <string name="value_not_supported">Tidak didukung probe ini</string>
 
     <string name="error_no_response">Sensor tidak merespons</string>
     <string name="error_no_response_hint">Periksa daya sensor (5–30 V DC), coba tukar kabel A dan B, lalu pastikan ID slave dan baud rate di Pengaturan sudah benar.</string>

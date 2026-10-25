@@ -18,7 +18,7 @@ class ReadingDaoTest {
     private lateinit var database: SoilSenseDatabase
     private lateinit var dao: ReadingDao
 
-    private val reading = SoilReading(46.4, 33.2, 44, 6.8, 32, 88, 104, null, 22)
+    private val reading = SoilReading(46.4, 33.2, 44, 6.8, 32, 88, 104)
 
     @Before
     fun setUp() {
@@ -42,7 +42,7 @@ class ReadingDaoTest {
     }
 
     @Test
-    fun roundTripPreservesNullableColumns() = runTest {
+    fun roundTripPreservesAllParameters() = runTest {
         dao.insert(reading.toEntity(1_000L))
 
         val stored = dao.getAllOldestFirst().single().toModel()

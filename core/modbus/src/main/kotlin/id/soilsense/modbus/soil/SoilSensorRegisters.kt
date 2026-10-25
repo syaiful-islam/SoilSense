@@ -5,6 +5,9 @@ package id.soilsense.modbus.soil
  *
  * The manual's tables list the function codes as 0x30 / 0x60, but every example frame in the same
  * manual uses the standard Modbus codes 0x03 / 0x06, which is what the probe actually implements.
+ *
+ * The manual also lists salinity (0x0007) and TDS (0x0008). Those are values derived from EC, not
+ * measurements, and the probe is a 7-in-1 sensor, so they are deliberately not read.
  */
 public object SoilSensorRegisters {
     public const val MOISTURE: Int = 0x0000 // 0.1 %RH
@@ -14,17 +17,12 @@ public object SoilSensorRegisters {
     public const val NITROGEN: Int = 0x0004 // 1 mg/kg
     public const val PHOSPHORUS: Int = 0x0005 // 1 mg/kg
     public const val POTASSIUM: Int = 0x0006 // 1 mg/kg
-    public const val SALINITY: Int = 0x0007 // 1 mg/L
-    public const val TDS: Int = 0x0008 // 1 mg/L
 
     public const val SLAVE_ID: Int = 0x07D0
     public const val BAUD_RATE: Int = 0x07D1
 
-    /** Moisture … potassium. */
-    public const val BASIC_COUNT: Int = 7
-
-    /** Moisture … TDS. */
-    public const val EXTENDED_COUNT: Int = 9
+    /** Moisture … potassium: the 7 measured parameters, read in one request as in the manual's example. */
+    public const val MEASUREMENT_COUNT: Int = 7
 
     /** The probe answers this address regardless of its configured slave ID. */
     public const val BROADCAST_QUERY_ADDRESS: Int = 0xFF

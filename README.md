@@ -1,8 +1,8 @@
 # SoilSense — pembaca sensor tanah 7-in-1 (CWT-SOIL-NPKPHCTH-S) via USB-RS485
 
 Aplikasi Android (Kotlin + Jetpack Compose) yang membaca probe tanah ComWinTop 7-in-1 lewat adaptor
-USB-RS485 yang dicolokkan ke ponsel dengan OTG. Menampilkan kelembapan, suhu, EC, pH, N, P, K
-(plus salinitas & TDS bila firmware probe mendukung), merekam riwayat, dan ekspor CSV.
+USB-RS485 yang dicolokkan ke ponsel dengan OTG. Menampilkan 7 parameter sesuai label sensor
+(suhu, kelembapan, EC, pH, N, P, K), merekam riwayat, dan ekspor CSV.
 
 ## Perangkat keras
 
@@ -25,15 +25,16 @@ USB-RS485 yang dicolokkan ke ponsel dengan OTG. Menampilkan kelembapan, suhu, EC
 
 - Modbus RTU, fungsi **0x03** (baca) dan **0x06** (tulis). Tabel di manual menulis "0x30/0x60",
   tetapi semua contoh frame di manual memakai 0x03/0x06 — itulah yang dipakai.
-- Register 0x0000–0x0008: kelembapan (0,1 %), suhu (0,1 °C, *signed*), EC (µS/cm), pH (0,1),
-  N, P, K (mg/kg), salinitas, TDS (mg/L).
-- Aplikasi membaca 9 register; bila probe menolak/diam, otomatis kembali ke 7 register.
+- Register 0x0000–0x0006 dibaca dalam satu permintaan (sama dengan contoh di manual):
+  kelembapan (0,1 %), suhu (0,1 °C, *signed*), EC (µS/cm), pH (0,1), N, P, K (mg/kg).
+- Salinitas (0x0007) dan TDS (0x0008) di manual hanyalah turunan dari EC, bukan pengukuran,
+  jadi tidak dibaca.
 - Semua 9 contoh frame di manual sudah dicek CRC-nya dan dijadikan test unit.
 
 ## Arsitektur
 
 ```
-:core:modbus   Kotlin/JVM murni — CRC16, ModbusRtuClient, SoilSensor (decoder + fallback 9→7 register)
+:core:modbus   Kotlin/JVM murni — CRC16, ModbusRtuClient, SoilSensor (baca 7 register + decoder)
 :app           Android — Compose UI, Hilt, Room, DataStore, usb-serial-for-android
   data/usb       UsbSerialConnector (izin USB, hot-plug, buka port), UsbSerialPortTransport
   data/sensor    UsbSoilSensorRepository — state koneksi + polling Flow (berhenti saat UI tidak aktif)

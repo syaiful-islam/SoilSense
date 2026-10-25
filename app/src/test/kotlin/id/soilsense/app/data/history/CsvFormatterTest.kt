@@ -12,10 +12,10 @@ class CsvFormatterTest {
     private val formatter = CsvFormatter(TimeZone.getTimeZone("Asia/Jakarta"))
 
     @Test
-    fun `row uses ISO timestamp, dot decimals and empty optional columns`() {
+    fun `row uses ISO timestamp and dot decimals`() {
         val row = formatter.row(RecordedReading(id = 1, timestampMillis = 0, reading = testReading))
 
-        assertEquals("1970-01-01T07:00:00+07:00,46.4,33.2,44,9.0,32,88,104,,", row)
+        assertEquals("1970-01-01T07:00:00+07:00,46.4,33.2,44,9.0,32,88,104", row)
     }
 
     @Test
@@ -32,11 +32,9 @@ class CsvFormatterTest {
 
     @Test
     fun `header has one column per row value`() {
-        val row = formatter.row(
-            RecordedReading(1, 0, testReading.copy(salinityMgPerL = 24, tdsMgPerL = 22)),
-        )
+        val row = formatter.row(RecordedReading(1, 0, testReading))
 
         assertEquals(formatter.header().split(',').size, row.split(',').size)
-        assertEquals(listOf("24", "22"), row.split(',').takeLast(2))
+        assertEquals(listOf("32", "88", "104"), row.split(',').takeLast(3))
     }
 }

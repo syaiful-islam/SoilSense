@@ -333,14 +333,6 @@ private fun MetricTile(metric: Metric) {
                 maxLines = 1,
                 modifier = Modifier.fillMaxWidth(),
             )
-            if (metric.notSupported) {
-                Text(
-                    stringResource(R.string.value_not_supported),
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
         }
     }
 }
@@ -357,8 +349,6 @@ private object MetricColors {
     val Nitrogen = Color(0xFFC2185B)
     val Phosphorus = Color(0xFF00695C)
     val Potassium = Color(0xFF283593)
-    val Salinity = Color(0xFF5D4037)
-    val Tds = Color(0xFF00727C)
 }
 
 @Composable
@@ -375,7 +365,6 @@ private data class Metric(
     val value: Number?,
     @param:StringRes val unit: Int?,
     val color: Color,
-    val notSupported: Boolean = false,
 )
 
 private fun metricsOf(reading: SoilReading?): List<Metric> = listOf(
@@ -410,22 +399,6 @@ private fun metricsOf(reading: SoilReading?): List<Metric> = listOf(
         R.string.unit_mg_kg,
         MetricColors.Potassium,
     ),
-    Metric(
-        "salinity",
-        R.string.metric_salinity,
-        reading?.salinityMgPerL,
-        R.string.unit_mg_l,
-        MetricColors.Salinity,
-        notSupported = reading != null && reading.salinityMgPerL == null,
-    ),
-    Metric(
-        "tds",
-        R.string.metric_tds,
-        reading?.tdsMgPerL,
-        R.string.unit_mg_l,
-        MetricColors.Tds,
-        notSupported = reading != null && reading.tdsMgPerL == null,
-    ),
 )
 
 private val previewReading = SoilReading(
@@ -436,8 +409,6 @@ private val previewReading = SoilReading(
     nitrogenMgPerKg = 32,
     phosphorusMgPerKg = 88,
     potassiumMgPerKg = 104,
-    salinityMgPerL = 24,
-    tdsMgPerL = null,
 )
 
 @Preview(showBackground = true)

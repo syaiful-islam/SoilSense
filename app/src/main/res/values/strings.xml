@@ -50,18 +50,14 @@
     <string name="metric_nitrogen">Nitrogen (N)</string>
     <string name="metric_phosphorus">Phosphorus (P)</string>
     <string name="metric_potassium">Potassium (K)</string>
-    <string name="metric_salinity">Salinity</string>
-    <string name="metric_tds">TDS</string>
 
     <string name="unit_percent" formatted="false" translatable="false">%</string>
     <string name="unit_celsius" translatable="false">°C</string>
     <string name="unit_us_cm" translatable="false">µS/cm</string>
     <string name="unit_mg_kg" translatable="false">mg/kg</string>
-    <string name="unit_mg_l" translatable="false">mg/L</string>
     <string name="value_one_decimal" translatable="false">%1$.1f</string>
     <string name="value_integer" translatable="false">%1$d</string>
     <string name="value_unavailable" translatable="false">—</string>
-    <string name="value_not_supported">Not supported by this probe</string>
 
     <!-- Read errors -->
     <string name="error_no_response">Sensor is not responding</string>
