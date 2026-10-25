@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SoilSense</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">Live</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Actions -->
+    <string name="action_connect">Connect</string>
+    <string name="action_disconnect">Disconnect</string>
+    <string name="action_retry">Try again</string>
+    <string name="action_request_permission">Allow USB access</string>
+    <string name="action_save">Save</string>
+    <string name="action_detect">Detect ID</string>
+    <string name="action_use_detected_id">Use this ID</string>
+    <string name="action_export_csv">Export CSV</string>
+    <string name="action_clear_history">Clear history</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+
+    <!-- Connection card -->
+    <string name="adapter_label">%1$s (%2$s)</string>
+    <string name="connection_no_device">No USB adapter detected</string>
+    <string name="connection_no_device_hint">Plug the USB-RS485 adapter into the phone with an OTG cable.</string>
+    <string name="connection_ready">Adapter ready</string>
+    <string name="connection_requesting_permission">Waiting for USB permission…</string>
+    <string name="connection_permission_denied">USB access denied</string>
+    <string name="connection_permission_denied_hint">Allow access so the app can read the sensor.</string>
+    <string name="connection_connecting">Connecting…</string>
+    <string name="connection_connected">Connected</string>
+    <string name="connection_connected_detail">%1$s · %2$d bps</string>
+    <string name="connection_open_failed">Could not open the USB port</string>
+    <string name="connection_open_failed_hint">Unplug the adapter, plug it back in and try again.</string>
+    <string name="connection_lost">Connection lost</string>
+    <string name="connection_lost_hint">The adapter was unplugged or the USB link failed.</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_readings_title">Soil readings</string>
+    <string name="status_reading">Reading sensor…</string>
+    <string name="status_updated">Updated %1$s · every %2$d s</string>
+    <string name="recording_title">Save to history</string>
+    <string name="recording_hint">Each successful reading is stored while this screen is open.</string>
+
+    <string name="metric_moisture">Soil moisture</string>
+    <string name="metric_temperature">Temperature</string>
+    <string name="metric_conductivity">Conductivity (EC)</string>
+    <string name="metric_ph">pH</string>
+    <string name="metric_nitrogen">Nitrogen (N)</string>
+    <string name="metric_phosphorus">Phosphorus (P)</string>
+    <string name="metric_potassium">Potassium (K)</string>
+    <string name="metric_salinity">Salinity</string>
+    <string name="metric_tds">TDS</string>
+
+    <string name="unit_percent" formatted="false" translatable="false">%</string>
+    <string name="unit_celsius" translatable="false">°C</string>
+    <string name="unit_us_cm" translatable="false">µS/cm</string>
+    <string name="unit_mg_kg" translatable="false">mg/kg</string>
+    <string name="unit_mg_l" translatable="false">mg/L</string>
+    <string name="value_one_decimal" translatable="false">%1$.1f</string>
+    <string name="value_integer" translatable="false">%1$d</string>
+    <string name="value_unavailable" translatable="false">—</string>
+    <string name="value_not_supported">Not supported by this probe</string>
+
+    <!-- Read errors -->
+    <string name="error_no_response">Sensor is not responding</string>
+    <string name="error_no_response_hint">Check sensor power (5–30 V DC), swap the A and B wires, and confirm the slave ID and baud rate in Settings.</string>
+    <string name="error_corrupted">Corrupted data from sensor</string>
+    <string name="error_corrupted_hint">Usually a wrong baud rate or interference on the RS485 cable.</string>
+    <string name="error_device_exception">Sensor rejected the request (code %1$d)</string>
+    <string name="error_device_exception_hint">The probe firmware does not support this register range.</string>
+    <string name="error_connection_lost">USB connection lost</string>
+    <string name="error_connection_lost_hint">Reconnect the adapter.</string>
+    <string name="error_not_connected">Not connected to the sensor</string>
+    <string name="error_not_connected_hint">Connect the adapter on the Live screen first.</string>
+
+    <string name="wiring_title">Wiring</string>
+    <string name="wiring_body">Sensor → USB-RS485 adapter:\n• Brown (V+) → power supply 5–24 V DC (+)\n• Black (GND) → power supply (−) and adapter GND\n• Yellow (A+) → adapter A+ / 485+\n• Blue (B−) → adapter B− / 485−\nPlug the adapter into the phone through an OTG cable. Sensor defaults: ID 1, 4800 bps, 8N1.</string>
+
+    <!-- History -->
+    <string name="history_empty_title">No saved readings yet</string>
+    <string name="history_empty_body">Turn on “Save to history” on the Live screen to record readings.</string>
+    <plurals name="history_summary">
+        <item quantity="one">%1$d reading stored · showing latest %2$d</item>
+        <item quantity="other">%1$d readings stored · showing latest %2$d</item>
+    </plurals>
+    <string name="history_row_physical">Moisture %1$.1f%% · %2$.1f °C · pH %3$.1f · EC %4$d µS/cm</string>
+    <string name="history_row_npk">N %1$d · P %2$d · K %3$d mg/kg</string>
+    <string name="history_clear_title">Delete all readings?</string>
+    <string name="history_clear_message">This cannot be undone. Export a CSV first if you need the data.</string>
+    <string name="history_cleared">History cleared</string>
+    <plurals name="history_exported">
+        <item quantity="one">Exported %d reading</item>
+        <item quantity="other">Exported %d readings</item>
+    </plurals>
+    <string name="history_export_failed">Export failed</string>
+
+    <!-- Settings -->
+    <string name="settings_section_communication">Sensor communication</string>
+    <string name="settings_slave_id">Slave ID</string>
+    <string name="settings_slave_id_hint">%1$d–%2$d · default 1</string>
+    <string name="settings_baud_rate">Baud rate</string>
+    <string name="settings_baud_rate_hint">Must match the sensor (default 4800). Changing it here does not reconfigure the sensor.</string>
+    <string name="settings_poll_interval">Reading interval</string>
+    <string name="settings_poll_interval_value">Every %1$d s</string>
+    <string name="settings_section_detect">Find sensor ID</string>
+    <string name="settings_detect_body">Asks the probe for its slave ID using address 0xFF. Only one probe may be connected.</string>
+    <string name="settings_detect_requires_connection">Connect the adapter first.</string>
+    <string name="settings_detect_found">Detected slave ID: %1$d</string>
+</resources>

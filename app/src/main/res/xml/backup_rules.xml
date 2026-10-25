@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and lower: back up everything (settings and recorded readings). Room's WAL files
+     are included automatically, so the database is restored consistently. -->
+<full-backup-content />

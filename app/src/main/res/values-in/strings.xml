@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_dashboard">Langsung</string>
+    <string name="nav_history">Riwayat</string>
+    <string name="nav_settings">Pengaturan</string>
+
+    <string name="action_connect">Hubungkan</string>
+    <string name="action_disconnect">Putuskan</string>
+    <string name="action_retry">Coba lagi</string>
+    <string name="action_request_permission">Izinkan akses USB</string>
+    <string name="action_save">Simpan</string>
+    <string name="action_detect">Deteksi ID</string>
+    <string name="action_use_detected_id">Pakai ID ini</string>
+    <string name="action_export_csv">Ekspor CSV</string>
+    <string name="action_clear_history">Hapus riwayat</string>
+    <string name="action_delete">Hapus</string>
+    <string name="action_cancel">Batal</string>
+
+    <string name="adapter_label">%1$s (%2$s)</string>
+    <string name="connection_no_device">Adaptor USB tidak terdeteksi</string>
+    <string name="connection_no_device_hint">Colokkan adaptor USB-RS485 ke ponsel dengan kabel OTG.</string>
+    <string name="connection_ready">Adaptor siap</string>
+    <string name="connection_requesting_permission">Menunggu izin USB…</string>
+    <string name="connection_permission_denied">Akses USB ditolak</string>
+    <string name="connection_permission_denied_hint">Izinkan akses agar aplikasi dapat membaca sensor.</string>
+    <string name="connection_connecting">Menghubungkan…</string>
+    <string name="connection_connected">Terhubung</string>
+    <string name="connection_connected_detail">%1$s · %2$d bps</string>
+    <string name="connection_open_failed">Port USB gagal dibuka</string>
+    <string name="connection_open_failed_hint">Cabut adaptor, colokkan lagi, lalu coba lagi.</string>
+    <string name="connection_lost">Koneksi terputus</string>
+    <string name="connection_lost_hint">Adaptor tercabut atau koneksi USB bermasalah.</string>
+
+    <string name="dashboard_readings_title">Data tanah</string>
+    <string name="status_reading">Membaca sensor…</string>
+    <string name="status_updated">Diperbarui %1$s · tiap %2$d dtk</string>
+    <string name="recording_title">Simpan ke riwayat</string>
+    <string name="recording_hint">Setiap pembacaan yang berhasil disimpan selama layar ini terbuka.</string>
+
+    <string name="metric_moisture">Kelembapan tanah</string>
+    <string name="metric_temperature">Suhu</string>
+    <string name="metric_conductivity">Konduktivitas (EC)</string>
+    <string name="metric_ph">pH</string>
+    <string name="metric_nitrogen">Nitrogen (N)</string>
+    <string name="metric_phosphorus">Fosfor (P)</string>
+    <string name="metric_potassium">Kalium (K)</string>
+    <string name="metric_salinity">Salinitas</string>
+    <string name="metric_tds">TDS</string>
+    <string name="value_not_supported">Tidak didukung probe ini</string>
+
+    <string name="error_no_response">Sensor tidak merespons</string>
+    <string name="error_no_response_hint">Periksa daya sensor (5–30 V DC), coba tukar kabel A dan B, lalu pastikan ID slave dan baud rate di Pengaturan sudah benar.</string>
+    <string name="error_corrupted">Data dari sensor rusak</string>
+    <string name="error_corrupted_hint">Biasanya karena baud rate salah atau gangguan pada kabel RS485.</string>
+    <string name="error_device_exception">Sensor menolak permintaan (kode %1$d)</string>
+    <string name="error_device_exception_hint">Firmware probe tidak mendukung rentang register ini.</string>
+    <string name="error_connection_lost">Koneksi USB terputus</string>
+    <string name="error_connection_lost_hint">Hubungkan ulang adaptor.</string>
+    <string name="error_not_connected">Belum terhubung ke sensor</string>
+    <string name="error_not_connected_hint">Hubungkan adaptor di layar Langsung terlebih dahulu.</string>
+
+    <string name="wiring_title">Pengkabelan</string>
+    <string name="wiring_body">Sensor → adaptor USB-RS485:\n• Cokelat (V+) → catu daya 5–24 V DC (+)\n• Hitam (GND) → catu daya (−) dan GND adaptor\n• Kuning (A+) → terminal A+ / 485+ adaptor\n• Biru (B−) → terminal B− / 485− adaptor\nColokkan adaptor ke ponsel lewat kabel OTG. Bawaan sensor: ID 1, 4800 bps, 8N1.</string>
+
+    <string name="history_empty_title">Belum ada data tersimpan</string>
+    <string name="history_empty_body">Aktifkan “Simpan ke riwayat” di layar Langsung untuk merekam data.</string>
+    <plurals name="history_summary">
+        <item quantity="other">%1$d data tersimpan · menampilkan %2$d terbaru</item>
+    </plurals>
+    <string name="history_row_physical">Kelembapan %1$.1f%% · %2$.1f °C · pH %3$.1f · EC %4$d µS/cm</string>
+    <string name="history_row_npk">N %1$d · P %2$d · K %3$d mg/kg</string>
+    <string name="history_clear_title">Hapus semua data?</string>
+    <string name="history_clear_message">Tindakan ini tidak bisa dibatalkan. Ekspor CSV dulu jika datanya masih diperlukan.</string>
+    <string name="history_cleared">Riwayat dihapus</string>
+    <plurals name="history_exported">
+        <item quantity="other">%d data diekspor</item>
+    </plurals>
+    <string name="history_export_failed">Ekspor gagal</string>
+
+    <string name="settings_section_communication">Komunikasi sensor</string>
+    <string name="settings_slave_id">ID slave</string>
+    <string name="settings_slave_id_hint">%1$d–%2$d · bawaan 1</string>
+    <string name="settings_baud_rate">Baud rate</string>
+    <string name="settings_baud_rate_hint">Harus sama dengan sensor (bawaan 4800). Mengubahnya di sini tidak mengubah pengaturan sensor.</string>
+    <string name="settings_poll_interval">Interval pembacaan</string>
+    <string name="settings_poll_interval_value">Tiap %1$d detik</string>
+    <string name="settings_section_detect">Cari ID sensor</string>
+    <string name="settings_detect_body">Menanyakan ID slave ke probe lewat alamat 0xFF. Hanya boleh satu probe yang terhubung.</string>
+    <string name="settings_detect_requires_connection">Hubungkan adaptor terlebih dahulu.</string>
+    <string name="settings_detect_found">ID slave terdeteksi: %1$d</string>
+</resources>
