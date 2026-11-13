@@ -3,7 +3,7 @@
     <string name="app_name" translatable="false">SoilSense</string>
 
     <!-- Navigation -->
-    <string name="nav_dashboard">Live</string>
+    <string name="nav_dashboard">Home</string>
     <string name="nav_history">History</string>
     <string name="nav_device">Device</string>
     <string name="nav_settings">Settings</string>
@@ -88,7 +88,7 @@
 
     <!-- History -->
     <string name="history_empty_title">No saved readings yet</string>
-    <string name="history_empty_body">Type a name and tap SAVE at the bottom of the Live screen.</string>
+    <string name="history_empty_body">Type a name and tap SAVE at the bottom of the Home screen.</string>
     <plurals name="history_summary">
         <item quantity="one">%1$d reading stored · showing latest %2$d</item>
         <item quantity="other">%1$d readings stored · showing latest %2$d</item>

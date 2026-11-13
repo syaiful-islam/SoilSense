@@ -58,6 +58,11 @@ android {
     }
 }
 
+// APK files are named SoilSensor-<buildType>.apk, e.g. SoilSensor-debug.apk.
+base {
+    archivesName.set("SoilSensor")
+}
+
 room {
     schemaDirectory("$projectDir/schemas")
 }

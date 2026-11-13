@@ -23,7 +23,7 @@ enum class TopLevelDestination(
     @param:DrawableRes val iconRes: Int,
 ) {
     DASHBOARD(DashboardDestination, R.string.nav_dashboard, R.drawable.ic_dashboard),
-    HISTORY(HistoryDestination, R.string.nav_history, R.drawable.ic_history),
     DEVICE(DeviceDestination, R.string.nav_device, R.drawable.ic_usb),
+    HISTORY(HistoryDestination, R.string.nav_history, R.drawable.ic_history),
     SETTINGS(SettingsDestination, R.string.nav_settings, R.drawable.ic_settings),
 }

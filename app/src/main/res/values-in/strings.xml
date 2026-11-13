@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="nav_dashboard">Langsung</string>
+    <string name="nav_dashboard">Home</string>
     <string name="nav_history">Riwayat</string>
     <string name="nav_device">Perangkat</string>
     <string name="nav_settings">Pengaturan</string>
@@ -67,7 +67,7 @@
     <string name="wiring_body">Sensor → adaptor USB-RS485:\n• Cokelat (V+) → catu daya 5–24 V DC (+)\n• Hitam (GND) → catu daya (−) dan GND adaptor\n• Kuning (A+) → terminal A+ / 485+ adaptor\n• Biru (B−) → terminal B− / 485− adaptor\nColokkan adaptor ke ponsel lewat kabel OTG. Bawaan sensor: ID 1, 4800 bps, 8N1.</string>
 
     <string name="history_empty_title">Belum ada data tersimpan</string>
-    <string name="history_empty_body">Isi nama lalu ketuk SAVE di bagian bawah layar Langsung.</string>
+    <string name="history_empty_body">Isi nama lalu ketuk SAVE di bagian bawah layar Home.</string>
     <plurals name="history_summary">
         <item quantity="other">%1$d data tersimpan · menampilkan %2$d terbaru</item>
     </plurals>

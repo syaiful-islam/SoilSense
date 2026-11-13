@@ -40,10 +40,10 @@ USB-RS485 yang dicolokkan ke ponsel dengan OTG. Menampilkan 7 parameter sesuai l
   data/sensor    UsbSoilSensorRepository — state koneksi + polling Flow (berhenti saat UI tidak aktif)
   data/history   Room (riwayat) + ekspor CSV via Storage Access Framework
   data/settings  DataStore (ID slave, baud, interval, rekam)
-  ui/            Dashboard (Langsung), Riwayat, Pengaturan — NavigationSuiteScaffold adaptif
+  ui/            Home, Perangkat, Riwayat, Pengaturan — NavigationSuiteScaffold adaptif
 ```
 
-Polling hanya berjalan selama layar Langsung terbuka (`WhileSubscribed(5 s)`), sehingga tidak
+Polling hanya berjalan selama layar Home terbuka (`WhileSubscribed(5 s)`), sehingga tidak
 menguras baterai di latar belakang. Perekaman di latar belakang (foreground service) belum dibuat.
 
 ## Build
