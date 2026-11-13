@@ -10,11 +10,14 @@ import id.soilsense.app.data.model.SensorSample
 import id.soilsense.app.data.sensor.SoilSensorRepository
 import id.soilsense.app.data.settings.SettingsRepository
 import id.soilsense.modbus.soil.SoilReading
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -30,6 +33,14 @@ data class DashboardUiState(
     val pollIntervalSeconds: Int = 0,
 )
 
+/** One-off results shown as a snackbar. */
+sealed interface DashboardEvent {
+    data object ReadingSaved : DashboardEvent
+
+    /** Nothing has been read yet, so there is nothing to save. */
+    data object NothingToSave : DashboardEvent
+}
+
 /** Accumulated poll results, independent of connection and settings. */
 private data class SampleState(
     val latestReading: SoilReading? = null,
@@ -43,6 +54,9 @@ class DashboardViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val historyRepository: HistoryRepository,
 ) : ViewModel() {
+
+    private val _events = Channel<DashboardEvent>(Channel.BUFFERED)
+    val events: Flow<DashboardEvent> = _events.receiveAsFlow()
 
     private val samples = sensorRepository.liveReadings()
         .onEach { sample ->
@@ -91,7 +105,18 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch { sensorRepository.disconnect() }
     }
 
-    fun setRecording(enabled: Boolean) {
-        viewModelScope.launch { settingsRepository.setRecordingEnabled(enabled) }
+    /** Stores the reading currently on screen in the history, independent of automatic recording. */
+    fun saveCurrentReading() {
+        val state = uiState.value
+        val reading = state.latestReading
+        val timestamp = state.lastUpdatedMillis
+        viewModelScope.launch {
+            if (reading == null || timestamp == null) {
+                _events.send(DashboardEvent.NothingToSave)
+            } else {
+                historyRepository.save(timestamp, reading)
+                _events.send(DashboardEvent.ReadingSaved)
+            }
+        }
     }
 }

@@ -37,13 +37,23 @@
     <string name="connection_lost_hint">The adapter was unplugged or the USB link failed.</string>
 
     <!-- Dashboard -->
-    <string name="dashboard_readings_title">Soil readings</string>
+    <string name="dashboard_title">Soil Parameter Detector</string>
+    <string name="dashboard_footer">Saved readings are in History; export them there as CSV for Excel.</string>
+    <string name="dashboard_reading_saved">Reading saved to History</string>
+    <string name="dashboard_nothing_to_save">No reading to save yet</string>
+    <string name="action_save_reading">Save reading</string>
+    <string name="action_open_data">Data</string>
+    <string name="connection_connected_summary">Connected · %1$s · %2$d bps</string>
+    <string name="status_with_recording">%1$s · ● Recording</string>
+    <string name="symbol_nitrogen" translatable="false">N</string>
+    <string name="symbol_phosphorus" translatable="false">P</string>
+    <string name="symbol_potassium" translatable="false">K</string>
     <string name="status_reading">Reading sensor…</string>
     <string name="status_updated">Updated %1$s · every %2$d s</string>
-    <string name="recording_title">Save to history</string>
-    <string name="recording_hint">Each successful reading is stored while this screen is open.</string>
+    <string name="recording_title">Record automatically</string>
+    <string name="recording_hint">Store every reading in History while the Live screen is open.</string>
 
-    <string name="metric_moisture">Soil moisture</string>
+    <string name="metric_moisture">Moisture</string>
     <string name="metric_temperature">Temperature</string>
     <string name="metric_conductivity">Conductivity (EC)</string>
     <string name="metric_ph">pH</string>
@@ -76,7 +86,7 @@
 
     <!-- History -->
     <string name="history_empty_title">No saved readings yet</string>
-    <string name="history_empty_body">Turn on “Save to history” on the Live screen to record readings.</string>
+    <string name="history_empty_body">Tap “Save reading” on the Live screen, or turn on “Record automatically” in Settings.</string>
     <plurals name="history_summary">
         <item quantity="one">%1$d reading stored · showing latest %2$d</item>
         <item quantity="other">%1$d readings stored · showing latest %2$d</item>

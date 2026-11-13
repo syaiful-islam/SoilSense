@@ -68,6 +68,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setPollIntervalSeconds(clamped) }
     }
 
+    fun setRecording(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setRecordingEnabled(enabled) }
+    }
+
     fun detectSlaveId() {
         if (detection.value == DetectionState.Running) return
         viewModelScope.launch {

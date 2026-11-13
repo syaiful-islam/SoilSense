@@ -47,7 +47,9 @@ fun SoilSenseApp(navController: NavHostController = rememberNavController()) {
         },
     ) {
         NavHost(navController = navController, startDestination = DashboardDestination) {
-            composable<DashboardDestination> { DashboardRoute() }
+            composable<DashboardDestination> {
+                DashboardRoute(onOpenData = { navController.navigateToTopLevel(TopLevelDestination.HISTORY) })
+            }
             composable<HistoryDestination> { HistoryRoute() }
             composable<SettingsDestination> { SettingsRoute() }
         }

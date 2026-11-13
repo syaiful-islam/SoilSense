@@ -11,6 +11,7 @@ import id.soilsense.app.testing.MainDispatcherRule
 import id.soilsense.app.testing.testReading
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -85,12 +86,39 @@ class DashboardViewModelTest {
         sensor.connect()
 
         sensor.emit(SensorSample.Success(testReading, timestampMillis = 1_000))
-        viewModel.setRecording(true)
+        settings.setRecordingEnabled(true)
         sensor.emit(SensorSample.Success(testReading, timestampMillis = 2_000))
         sensor.emit(SensorSample.Failure(SensorReadError.CorruptedResponse, timestampMillis = 3_000))
 
         assertEquals(listOf(2_000L), history.saved.map { it.timestampMillis })
         assertTrue(viewModel.uiState.value.isRecording)
+    }
+
+    @Test
+    fun `save stores the reading on screen and confirms`() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+        val events = mutableListOf<DashboardEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.toList(events) }
+        sensor.connect()
+        sensor.emit(SensorSample.Success(testReading, timestampMillis = 5_000))
+
+        viewModel.saveCurrentReading()
+
+        assertEquals(listOf(5_000L), history.saved.map { it.timestampMillis })
+        assertEquals(testReading, history.saved.single().reading)
+        assertEquals(listOf<DashboardEvent>(DashboardEvent.ReadingSaved), events)
+    }
+
+    @Test
+    fun `save without a reading stores nothing and says so`() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+        val events = mutableListOf<DashboardEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.toList(events) }
+
+        viewModel.saveCurrentReading()
+
+        assertTrue(history.saved.isEmpty())
+        assertEquals(listOf<DashboardEvent>(DashboardEvent.NothingToSave), events)
     }
 
     @Test

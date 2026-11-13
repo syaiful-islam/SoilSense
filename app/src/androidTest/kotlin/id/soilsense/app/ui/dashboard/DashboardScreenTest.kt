@@ -1,6 +1,7 @@
 package id.soilsense.app.ui.dashboard
 
-import androidx.compose.ui.test.assertIsOff
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -10,6 +11,7 @@ import id.soilsense.app.R
 import id.soilsense.app.data.model.ConnectionState
 import id.soilsense.app.data.model.UsbAdapterInfo
 import id.soilsense.app.ui.theme.SoilSenseTheme
+import id.soilsense.modbus.soil.SoilReading
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -23,20 +25,27 @@ class DashboardScreenTest {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val adapter = UsbAdapterInfo("CH34x", 0x1A86, 0x7523)
+    private val reading = SoilReading(42.2, 12.5, 1378, 7.9, 68, 96, 220)
+
+    private fun show(state: DashboardUiState, onConnect: () -> Unit = {}, onSave: () -> Unit = {}, onData: () -> Unit = {}) {
+        composeRule.setContent {
+            SoilSenseTheme(dynamicColor = false) {
+                DashboardScreen(
+                    uiState = state,
+                    snackbarHostState = SnackbarHostState(),
+                    onConnect = onConnect,
+                    onDisconnect = {},
+                    onSaveReading = onSave,
+                    onOpenData = onData,
+                )
+            }
+        }
+    }
 
     @Test
     fun connectButtonInvokesCallback() {
         var connectClicks = 0
-        composeRule.setContent {
-            SoilSenseTheme(dynamicColor = false) {
-                DashboardScreen(
-                    uiState = DashboardUiState(connection = ConnectionState.Disconnected(adapter)),
-                    onConnect = { connectClicks++ },
-                    onDisconnect = {},
-                    onRecordingChange = {},
-                )
-            }
-        }
+        show(DashboardUiState(connection = ConnectionState.Disconnected(adapter)), onConnect = { connectClicks++ })
 
         composeRule.onNodeWithText(context.getString(R.string.action_connect)).performClick()
 
@@ -44,23 +53,24 @@ class DashboardScreenTest {
     }
 
     @Test
-    fun recordingRowTogglesAsOneSwitch() {
-        var recording: Boolean? = null
-        composeRule.setContent {
-            SoilSenseTheme(dynamicColor = false) {
-                DashboardScreen(
-                    uiState = DashboardUiState(connection = ConnectionState.Connected(adapter, 4800)),
-                    onConnect = {},
-                    onDisconnect = {},
-                    onRecordingChange = { recording = it },
-                )
-            }
+    fun showsAllSevenParametersAndSaves() {
+        var saves = 0
+        show(
+            DashboardUiState(connection = ConnectionState.Connected(adapter, 4800), latestReading = reading),
+            onSave = { saves++ },
+        )
+
+        listOf("12.5", "42.2", "1378", "7.9", "68", "96", "220").forEach {
+            composeRule.onNodeWithText(it).assertExists()
         }
+        composeRule.onNodeWithText(context.getString(R.string.action_save_reading)).performClick()
+        assertEquals(1, saves)
+    }
 
-        val row = composeRule.onNodeWithText(context.getString(R.string.recording_title))
-        row.assertIsOff()
-        row.performClick()
+    @Test
+    fun saveIsDisabledBeforeFirstReading() {
+        show(DashboardUiState(connection = ConnectionState.Connected(adapter, 4800)))
 
-        assertEquals(true, recording)
+        composeRule.onNodeWithText(context.getString(R.string.action_save_reading)).assertIsNotEnabled()
     }
 }

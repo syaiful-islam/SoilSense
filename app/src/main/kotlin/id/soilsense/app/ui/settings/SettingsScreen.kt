@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -18,6 +19,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -26,6 +29,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -39,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -64,6 +69,7 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
         onSlaveIdChange = viewModel::setSlaveId,
         onBaudRateChange = viewModel::setBaudRate,
         onPollIntervalChange = viewModel::setPollInterval,
+        onRecordingChange = viewModel::setRecording,
         onDetectSlaveId = viewModel::detectSlaveId,
         onApplyDetectedSlaveId = viewModel::applyDetectedSlaveId,
     )
@@ -76,6 +82,7 @@ fun SettingsScreen(
     onSlaveIdChange: (Int) -> Unit,
     onBaudRateChange: (Int) -> Unit,
     onPollIntervalChange: (Int) -> Unit,
+    onRecordingChange: (Boolean) -> Unit,
     onDetectSlaveId: () -> Unit,
     onApplyDetectedSlaveId: () -> Unit,
     modifier: Modifier = Modifier,
@@ -102,6 +109,7 @@ fun SettingsScreen(
             SlaveIdField(currentSlaveId = settings.slaveId, onSave = onSlaveIdChange)
             BaudRateSelector(selected = settings.baudRate, onSelect = onBaudRateChange)
             PollIntervalSlider(seconds = settings.pollIntervalSeconds, onChange = onPollIntervalChange)
+            RecordingToggle(checked = settings.recordingEnabled, onCheckedChange = onRecordingChange)
 
             SectionTitle(R.string.settings_section_detect)
             DetectSlaveId(
@@ -202,6 +210,18 @@ private fun BaudRateSelector(selected: Int, onSelect: (Int) -> Unit) {
 }
 
 @Composable
+private fun RecordingToggle(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.recording_title)) },
+        supportingContent = { Text(stringResource(R.string.recording_hint)) },
+        trailingContent = { Switch(checked = checked, onCheckedChange = null) },
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        // The whole row is the touch target and is announced once as a switch.
+        modifier = Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange),
+    )
+}
+
+@Composable
 private fun PollIntervalSlider(seconds: Int, onChange: (Int) -> Unit) {
     val range = SensorSettings.POLL_INTERVAL_RANGE_SECONDS
     // Local while dragging; persisted once on release to avoid a DataStore write per frame.
@@ -282,6 +302,7 @@ private fun SettingsScreenPreview() {
             onSlaveIdChange = {},
             onBaudRateChange = {},
             onPollIntervalChange = {},
+            onRecordingChange = {},
             onDetectSlaveId = {},
             onApplyDetectedSlaveId = {},
         )
