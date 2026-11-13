@@ -1,7 +1,9 @@
 package id.soilsense.app.ui.settings
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -25,6 +28,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -41,6 +45,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -97,28 +102,44 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            SectionTitle(R.string.settings_section_communication)
-            SlaveIdField(currentSlaveId = settings.slaveId, onSave = onSlaveIdChange)
-            BaudRateSelector(selected = settings.baudRate, onSelect = onBaudRateChange)
-            PollIntervalSlider(seconds = settings.pollIntervalSeconds, onChange = onPollIntervalChange)
+            SettingsCard(R.string.settings_section_communication) {
+                SlaveIdField(currentSlaveId = settings.slaveId, onSave = onSlaveIdChange)
+                BaudRateSelector(selected = settings.baudRate, onSelect = onBaudRateChange)
+                PollIntervalSlider(seconds = settings.pollIntervalSeconds, onChange = onPollIntervalChange)
+            }
+            SettingsCard(R.string.settings_section_detect) {
+                DetectSlaveId(
+                    isConnected = uiState.isConnected,
+                    detection = uiState.detection,
+                    onDetect = onDetectSlaveId,
+                    onApply = onApplyDetectedSlaveId,
+                )
+            }
+        }
+    }
+}
 
-            SectionTitle(R.string.settings_section_detect)
-            DetectSlaveId(
-                isConnected = uiState.isConnected,
-                detection = uiState.detection,
-                onDetect = onDetectSlaveId,
-                onApply = onApplyDetectedSlaveId,
-            )
-
+/** A titled, rounded group of related settings. */
+@Composable
+private fun SettingsCard(@StringRes titleRes: Int, content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            SectionTitle(titleRes)
+            content()
         }
     }
 }
 
 @Composable
-private fun SectionTitle(titleRes: Int) {
+private fun SectionTitle(@StringRes titleRes: Int) {
     Text(
         stringResource(titleRes),
         style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.semantics { heading() },
     )

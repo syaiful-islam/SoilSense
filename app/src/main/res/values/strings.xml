@@ -47,6 +47,27 @@
     <string name="save_name_placeholder">e.g. Field A, row 3</string>
     <string name="status_not_connected">Sensor not connected</string>
     <string name="action_open_device">Connect</string>
+    <string name="dashboard_subtitle">7-in-1 soil probe · live readings</string>
+    <string name="ph_acidic">Acidic</string>
+    <string name="ph_neutral">Neutral</string>
+    <string name="ph_alkaline">Alkaline</string>
+    <string name="metric_short_temperature">Temp</string>
+    <string name="metric_short_moisture">Moist.</string>
+    <string name="metric_short_conductivity">EC</string>
+    <string name="wiring_subtitle">Probe cable → USB-RS485 adapter</string>
+    <string name="wiring_footer">Plug the adapter into the phone with an OTG cable. Sensor defaults: ID 1, 4800 bps, 8N1.</string>
+    <string name="wire_brown">Brown</string>
+    <string name="wire_black">Black</string>
+    <string name="wire_yellow">Yellow</string>
+    <string name="wire_blue">Blue</string>
+    <string name="wire_signal_power" translatable="false">V+</string>
+    <string name="wire_signal_ground" translatable="false">GND</string>
+    <string name="wire_signal_a" translatable="false">A+</string>
+    <string name="wire_signal_b" translatable="false">B−</string>
+    <string name="wire_target_power">Power supply 5–24 V DC (+)</string>
+    <string name="wire_target_ground">Power supply (−) and adapter GND</string>
+    <string name="wire_target_a">Adapter terminal A+ / 485+</string>
+    <string name="wire_target_b">Adapter terminal B− / 485−</string>
     <string name="dashboard_nothing_to_save">No reading to save yet</string>
     <string name="connection_connected_summary">Connected · %1$s · %2$d bps</string>
     <string name="symbol_nitrogen" translatable="false">N</string>
@@ -84,7 +105,6 @@
     <string name="error_not_connected_hint">Connect the adapter on the Device tab first.</string>
 
     <string name="wiring_title">Wiring</string>
-    <string name="wiring_body">Sensor → USB-RS485 adapter:\n• Brown (V+) → power supply 5–24 V DC (+)\n• Black (GND) → power supply (−) and adapter GND\n• Yellow (A+) → adapter A+ / 485+\n• Blue (B−) → adapter B− / 485−\nPlug the adapter into the phone through an OTG cable. Sensor defaults: ID 1, 4800 bps, 8N1.</string>
 
     <!-- History -->
     <string name="history_empty_title">No saved readings yet</string>
@@ -93,8 +113,6 @@
         <item quantity="one">%1$d reading stored · showing latest %2$d</item>
         <item quantity="other">%1$d readings stored · showing latest %2$d</item>
     </plurals>
-    <string name="history_row_physical">Moisture %1$.1f%% · %2$.1f °C · pH %3$.1f · EC %4$d µS/cm</string>
-    <string name="history_row_npk">N %1$d · P %2$d · K %3$d mg/kg</string>
     <string name="history_clear_title">Delete all readings?</string>
     <string name="history_clear_message">This cannot be undone. Export a CSV first if you need the data.</string>
     <string name="history_cleared">History cleared</string>

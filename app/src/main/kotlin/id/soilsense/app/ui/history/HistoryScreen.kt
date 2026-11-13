@@ -2,27 +2,35 @@ package id.soilsense.app.ui.history
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -35,10 +43,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -46,6 +56,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.soilsense.app.R
 import id.soilsense.app.data.model.RecordedReading
+import id.soilsense.app.ui.common.SoilMetric
+import id.soilsense.app.ui.common.formatMetricValue
 import id.soilsense.app.ui.common.rememberTimeFormatter
 import id.soilsense.app.ui.theme.SoilSenseTheme
 import id.soilsense.modbus.soil.SoilReading
@@ -175,7 +187,11 @@ private fun EmptyHistory(modifier: Modifier = Modifier) {
 @Composable
 private fun HistoryList(state: HistoryUiState.Loaded) {
     val formatTimestamp = rememberTimeFormatter("yMMMdjms")
-    LazyColumn(contentPadding = PaddingValues(bottom = 16.dp), modifier = Modifier.fillMaxSize()) {
+    LazyColumn(
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize(),
+    ) {
         item(key = "summary") {
             Text(
                 text = pluralStringResource(
@@ -186,40 +202,66 @@ private fun HistoryList(state: HistoryUiState.Loaded) {
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             )
         }
         items(state.items, key = { it.id }) { item ->
-            HistoryRow(item, formatTimestamp(item.timestampMillis))
-            HorizontalDivider()
+            HistoryCard(item, formatTimestamp(item.timestampMillis))
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun HistoryRow(item: RecordedReading, timestamp: String) {
-    val r = item.reading
-    ListItem(
-        // Named saves lead with their name; unnamed ones (and older readings) with the time.
-        overlineContent = if (item.name.isNotBlank()) ({ Text(timestamp) }) else null,
-        headlineContent = { Text(item.name.ifBlank { timestamp }) },
-        supportingContent = {
-            Column {
+private fun HistoryCard(item: RecordedReading, timestamp: String) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            // Named saves lead with their name; unnamed ones (and older readings) with the time.
+            Text(
+                item.name.ifBlank { timestamp },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (item.name.isNotBlank()) {
                 Text(
-                    stringResource(
-                        R.string.history_row_physical,
-                        r.moisturePercent,
-                        r.temperatureCelsius,
-                        r.ph,
-                        r.conductivityMicroSiemensPerCm,
-                    ),
-                )
-                Text(
-                    stringResource(R.string.history_row_npk, r.nitrogenMgPerKg, r.phosphorusMgPerKg, r.potassiumMgPerKg),
+                    timestamp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        },
-    )
+            Spacer(Modifier.height(10.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                SoilMetric.entries.forEach { metric -> MetricChip(metric, item.reading) }
+            }
+        }
+    }
+}
+
+/** "● N 68 mg/kg" in the metric's own colour, matching its tile on Home. */
+@Composable
+private fun MetricChip(metric: SoilMetric, reading: SoilReading) {
+    val unit = metric.unit?.let { " " + stringResource(it) }.orEmpty()
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(metric.light.copy(alpha = 0.12f))
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+    ) {
+        Box(Modifier.size(8.dp).clip(CircleShape).background(metric.light))
+        Spacer(Modifier.width(6.dp))
+        Text(
+            stringResource(metric.shortLabel) + " " + formatMetricValue(metric.valueOf(reading)) + unit,
+            style = MaterialTheme.typography.labelMedium,
+        )
+    }
 }
 
 @Preview(showBackground = true)

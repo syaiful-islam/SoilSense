@@ -39,6 +39,23 @@
     <string name="save_name_placeholder">mis. Lahan A, baris 3</string>
     <string name="status_not_connected">Sensor belum terhubung</string>
     <string name="action_open_device">Hubungkan</string>
+    <string name="dashboard_subtitle">Probe tanah 7-in-1 · data langsung</string>
+    <string name="ph_acidic">Asam</string>
+    <string name="ph_neutral">Netral</string>
+    <string name="ph_alkaline">Basa</string>
+    <string name="metric_short_temperature">Suhu</string>
+    <string name="metric_short_moisture">Lembap</string>
+    <string name="metric_short_conductivity">EC</string>
+    <string name="wiring_subtitle">Kabel probe → adaptor USB-RS485</string>
+    <string name="wiring_footer">Colokkan adaptor ke HP dengan kabel OTG. Bawaan sensor: ID 1, 4800 bps, 8N1.</string>
+    <string name="wire_brown">Cokelat</string>
+    <string name="wire_black">Hitam</string>
+    <string name="wire_yellow">Kuning</string>
+    <string name="wire_blue">Biru</string>
+    <string name="wire_target_power">Catu daya 5–24 V DC (+)</string>
+    <string name="wire_target_ground">Catu daya (−) dan GND adaptor</string>
+    <string name="wire_target_a">Terminal A+ / 485+ adaptor</string>
+    <string name="wire_target_b">Terminal B− / 485− adaptor</string>
     <string name="dashboard_nothing_to_save">Belum ada data untuk disimpan</string>
     <string name="connection_connected_summary">Terhubung · %1$s · %2$d bps</string>
     <string name="status_reading">Membaca sensor…</string>
@@ -64,15 +81,12 @@
     <string name="error_not_connected_hint">Hubungkan adaptor di tab Perangkat terlebih dahulu.</string>
 
     <string name="wiring_title">Pengkabelan</string>
-    <string name="wiring_body">Sensor → adaptor USB-RS485:\n• Cokelat (V+) → catu daya 5–24 V DC (+)\n• Hitam (GND) → catu daya (−) dan GND adaptor\n• Kuning (A+) → terminal A+ / 485+ adaptor\n• Biru (B−) → terminal B− / 485− adaptor\nColokkan adaptor ke ponsel lewat kabel OTG. Bawaan sensor: ID 1, 4800 bps, 8N1.</string>
 
     <string name="history_empty_title">Belum ada data tersimpan</string>
     <string name="history_empty_body">Isi nama lalu ketuk SAVE di bagian bawah layar Home.</string>
     <plurals name="history_summary">
         <item quantity="other">%1$d data tersimpan · menampilkan %2$d terbaru</item>
     </plurals>
-    <string name="history_row_physical">Kelembapan %1$.1f%% · %2$.1f °C · pH %3$.1f · EC %4$d µS/cm</string>
-    <string name="history_row_npk">N %1$d · P %2$d · K %3$d mg/kg</string>
     <string name="history_clear_title">Hapus semua data?</string>
     <string name="history_clear_message">Tindakan ini tidak bisa dibatalkan. Ekspor CSV dulu jika datanya masih diperlukan.</string>
     <string name="history_cleared">Riwayat dihapus</string>
