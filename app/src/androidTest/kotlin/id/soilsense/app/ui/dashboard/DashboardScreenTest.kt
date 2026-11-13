@@ -2,6 +2,7 @@ package id.soilsense.app.ui.dashboard
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -62,7 +63,7 @@ class DashboardScreenTest {
         listOf("12.5", "42.2", "1378", "7.9", "68", "96", "220").forEach {
             composeRule.onNodeWithText(it).assertExists()
         }
-        composeRule.onNodeWithText(context.getString(R.string.save_name_label)).performTextInput("Lahan A")
+        composeRule.onNode(hasSetTextAction()).performTextInput("Lahan A")
         composeRule.onNodeWithText(context.getString(R.string.action_save_reading)).performClick()
         assertEquals(listOf("Lahan A"), saves)
     }

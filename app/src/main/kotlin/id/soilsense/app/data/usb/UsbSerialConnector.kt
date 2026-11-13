@@ -57,6 +57,8 @@ class UsbSerialConnector @Inject constructor(
         productId = driver.device.productId,
     )
 
+    fun hasPermission(device: UsbDevice): Boolean = usbManager.hasPermission(device)
+
     fun isAttached(device: UsbDevice): Boolean =
         usbManager.deviceList.values.any { it.deviceName == device.deviceName }
 

@@ -36,7 +36,7 @@
     <string name="dashboard_reading_saved">Data tersimpan ke Riwayat</string>
     <string name="dashboard_reading_saved_named">“%1$s” tersimpan ke Riwayat</string>
     <string name="save_name_label">Nama (opsional)</string>
-    <string name="save_name_placeholder">mis. Lahan A, baris 3</string>
+    <string name="save_name_placeholder">Nama (opsional), mis. Lahan A</string>
     <string name="status_not_connected">Sensor belum terhubung</string>
     <string name="action_open_device">Hubungkan</string>
     <string name="dashboard_subtitle">Probe tanah 7-in-1 · data langsung</string>

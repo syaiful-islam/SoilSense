@@ -5,12 +5,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.TextAutoSize
@@ -31,7 +32,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -50,11 +50,13 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -266,10 +268,12 @@ private fun MetricGrid(reading: SoilReading?, modifier: Modifier = Modifier) {
         ) {
             rows.forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
-                    // A short last row (potassium on phones) stretches across the full width.
                     row.forEach { metric ->
                         MetricTile(metric, reading, Modifier.weight(1f).height(tileHeight))
                     }
+                    // A short last row (potassium on phones) keeps the column width; the probe has
+                    // only 7 parameters, so the remaining cell stays empty.
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
@@ -396,7 +400,10 @@ private fun TileChip(text: String) {
     )
 }
 
-/** Manual save, at the very bottom: an optional name plus SAVE. Nothing is stored without this button. */
+/**
+ * Manual save, at the very bottom: an optional name plus SAVE, kept compact (44 dp) so the tiles
+ * get the room. Nothing is stored without this button.
+ */
 @Composable
 private fun SaveBar(canSave: Boolean, onSave: (name: String) -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
@@ -408,43 +415,92 @@ private fun SaveBar(canSave: Boolean, onSave: (name: String) -> Unit) {
     }
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        shadowElevation = 8.dp,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        shadowElevation = 6.dp,
         // Keeps the field above the keyboard while typing a name.
         modifier = Modifier.imePadding(),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
-            OutlinedTextField(
+            CompactNameField(
                 value = name,
                 onValueChange = { name = it.take(DashboardViewModel.MAX_NAME_LENGTH) },
-                label = { Text(stringResource(R.string.save_name_label)) },
-                placeholder = { Text(stringResource(R.string.save_name_placeholder)) },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Done,
-                ),
-                keyboardActions = KeyboardActions(onDone = { if (canSave) save() else focusManager.clearFocus() }),
+                onDone = { if (canSave) save() else focusManager.clearFocus() },
                 modifier = Modifier.weight(1f),
             )
             Button(
                 onClick = save,
                 enabled = canSave,
-                shape = RoundedCornerShape(16.dp),
+                shape = CircleShape,
+                contentPadding = PaddingValues(horizontal = 16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = HeaderBlue, contentColor = Color.White),
-                modifier = Modifier.padding(top = 6.dp).heightIn(min = 56.dp),
+                modifier = Modifier.height(COMPACT_HEIGHT),
             ) {
-                Icon(painterResource(R.drawable.ic_save), contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.action_save_reading), fontWeight = FontWeight.Bold)
+                Icon(painterResource(R.drawable.ic_save), contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    stringResource(R.string.action_save_reading),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
     }
+}
+
+private val COMPACT_HEIGHT = 44.dp
+
+/**
+ * Pill-shaped single-line field. OutlinedTextField enforces a 56 dp minimum height, so this one is
+ * built on BasicTextField; the placeholder doubles as the visible label and the accessibility name.
+ */
+@Composable
+private fun CompactNameField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onDone: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val label = stringResource(R.string.save_name_label)
+    val colors = MaterialTheme.colorScheme
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
+        cursorBrush = SolidColor(colors.primary),
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { onDone() }),
+        modifier = modifier
+            .height(COMPACT_HEIGHT)
+            .semantics { contentDescription = label },
+        decorationBox = { inner ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(colors.surfaceContainerHighest)
+                    .padding(horizontal = 16.dp),
+            ) {
+                Box(Modifier.weight(1f)) {
+                    if (value.isEmpty()) {
+                        Text(
+                            stringResource(R.string.save_name_placeholder),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    inner()
+                }
+            }
+        },
+    )
 }
 
 @Composable

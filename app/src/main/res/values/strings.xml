@@ -44,7 +44,7 @@
     <string name="dashboard_reading_saved">Reading saved to History</string>
     <string name="dashboard_reading_saved_named">Saved “%1$s” to History</string>
     <string name="save_name_label">Name (optional)</string>
-    <string name="save_name_placeholder">e.g. Field A, row 3</string>
+    <string name="save_name_placeholder">Name (optional), e.g. Field A</string>
     <string name="status_not_connected">Sensor not connected</string>
     <string name="action_open_device">Connect</string>
     <string name="dashboard_subtitle">7-in-1 soil probe · live readings</string>

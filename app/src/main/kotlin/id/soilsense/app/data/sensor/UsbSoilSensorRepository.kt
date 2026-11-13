@@ -58,11 +58,20 @@ class UsbSoilSensorRepository @Inject constructor(
     @Volatile
     private var session: Session? = null
 
+    /**
+     * Auto-connect is on until the user taps Disconnect, and comes back on when the adapter is
+     * unplugged, so plugging the probe in always connects without a tap.
+     */
+    @Volatile
+    private var autoConnectEnabled = true
+
     private val _connectionState = MutableStateFlow(idleState())
     override val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
     init {
         appScope.launch { connector.deviceChanges().collect { onUsbDevicesChanged() } }
+        // Adapter already plugged in when the app starts (including launch from the USB "open with" prompt).
+        appScope.launch { autoConnect() }
         appScope.launch {
             settingsRepository.settings
                 .map { it.baudRate }
@@ -72,7 +81,12 @@ class UsbSoilSensorRepository @Inject constructor(
         }
     }
 
-    override suspend fun connect() = sessionMutex.withLock {
+    override suspend fun connect() {
+        autoConnectEnabled = true
+        connectLocked()
+    }
+
+    private suspend fun connectLocked() = sessionMutex.withLock {
         if (session != null) return@withLock
 
         val driver = connector.findAdapter()
@@ -106,9 +120,26 @@ class UsbSoilSensorRepository @Inject constructor(
         _connectionState.value = ConnectionState.Connected(info, baudRate)
     }
 
-    override suspend fun disconnect() = sessionMutex.withLock {
-        closeSession()
-        _connectionState.value = idleState()
+    override suspend fun disconnect() {
+        // A deliberate disconnect must not be undone by auto-connect while the adapter stays plugged in.
+        autoConnectEnabled = false
+        sessionMutex.withLock {
+            closeSession()
+            _connectionState.value = idleState()
+        }
+    }
+
+    private suspend fun autoConnect() {
+        if (!autoConnectEnabled || session != null) return
+        val driver = connector.findAdapter() ?: return
+        if (!connector.hasPermission(driver.device)) {
+            // When the app is in front, Android may be showing its own "open with SoilSense?" prompt
+            // for the new device; accepting it grants access. Give it a moment so the user does not
+            // get two dialogs, then ask only if access is still missing.
+            delay(PERMISSION_PROMPT_GRACE_MILLIS)
+            if (!autoConnectEnabled || session != null) return
+        }
+        connectLocked()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -169,17 +200,25 @@ class UsbSoilSensorRepository @Inject constructor(
         SensorReadError.ConnectionLost
     }
 
-    private suspend fun onUsbDevicesChanged() = sessionMutex.withLock {
-        val current = session
-        if (current != null) {
-            if (!connector.isAttached(current.device)) {
-                closeSession()
-                _connectionState.value = ConnectionState.Failed(ConnectionFailure.CONNECTION_LOST)
+    private suspend fun onUsbDevicesChanged() {
+        val adapterPresent = sessionMutex.withLock {
+            val current = session
+            if (current != null) {
+                if (!connector.isAttached(current.device)) {
+                    closeSession()
+                    _connectionState.value = ConnectionState.Failed(ConnectionFailure.CONNECTION_LOST)
+                }
+                return@withLock current.let { connector.isAttached(it.device) }
             }
-            return@withLock
+            // Not connected: reflect whether an adapter is now plugged in.
+            _connectionState.value = idleState()
+            connector.findAdapter() != null
         }
-        // Not connected: reflect whether an adapter is now plugged in.
-        _connectionState.value = idleState()
+        if (adapterPresent) {
+            autoConnect()
+        } else {
+            autoConnectEnabled = true // unplugged: the next plug-in connects again
+        }
     }
 
     private suspend fun applyBaudRate(baudRate: Int) = sessionMutex.withLock {
@@ -214,5 +253,9 @@ class UsbSoilSensorRepository @Inject constructor(
         is ModbusException.ResponseTimeout -> SensorReadError.NoResponse
         is ModbusException.CrcMismatch, is ModbusException.UnexpectedResponse -> SensorReadError.CorruptedResponse
         is ModbusException.ExceptionResponse -> SensorReadError.DeviceException(exceptionCode)
+    }
+
+    private companion object {
+        const val PERMISSION_PROMPT_GRACE_MILLIS = 1_500L
     }
 }
