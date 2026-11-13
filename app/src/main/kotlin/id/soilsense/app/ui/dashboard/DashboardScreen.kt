@@ -462,9 +462,6 @@ private fun ConnectionState.toCardContent(): CardContent = when (this) {
 private fun UsbAdapterInfo.label(): String = stringResource(R.string.adapter_label, chipName, usbId)
 
 @Composable
-private fun UsbAdapterInfo.label(): String = stringResource(R.string.adapter_label, chipName, usbId)
-
-@Composable
 private fun WiringHelpCard() {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
