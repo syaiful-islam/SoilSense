@@ -33,6 +33,12 @@ jobs:
       - name: Assemble debug APK
         run: bash .github/scripts/gradle-with-annotations.sh :app:assembleDebug
 
+      - name: Check APK file name
+        run: |
+          ls app/build/outputs/apk/debug/
+          test -f app/build/outputs/apk/debug/SoilSensor-debug.apk \
+            || { echo "::error title=APK name::expected SoilSensor-debug.apk, got: $(ls app/build/outputs/apk/debug/)"; exit 1; }
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
