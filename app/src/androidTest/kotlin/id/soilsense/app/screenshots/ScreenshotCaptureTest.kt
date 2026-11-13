@@ -126,6 +126,7 @@ class ScreenshotCaptureTest {
             onSlaveIdChange = {},
             onBaudRateChange = {},
             onPollIntervalChange = {},
+            onWallpaperColorsChange = {},
             onDetectSlaveId = {},
             onApplyDetectedSlaveId = {},
         )

@@ -4,9 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import id.soilsense.app.data.model.SensorSettings
+import id.soilsense.app.data.settings.SettingsRepository
 import id.soilsense.app.ui.SoilSenseApp
 import id.soilsense.app.ui.theme.SoilSenseTheme
+import javax.inject.Inject
 
 /**
  * Single activity. It is also the target of USB_DEVICE_ATTACHED (see AndroidManifest.xml): when the
@@ -16,11 +21,15 @@ import id.soilsense.app.ui.theme.SoilSenseTheme
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
-            SoilSenseTheme {
+            val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = SensorSettings())
+            SoilSenseTheme(dynamicColor = settings.useWallpaperColors) {
                 SoilSenseApp()
             }
         }

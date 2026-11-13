@@ -64,6 +64,13 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun `wallpaper colours can be switched on`() = runTest {
+        viewModel.setUseWallpaperColors(true)
+
+        assertEquals(true, settings.current.useWallpaperColors)
+    }
+
+    @Test
     fun `connection state is exposed`() = runTest {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
 

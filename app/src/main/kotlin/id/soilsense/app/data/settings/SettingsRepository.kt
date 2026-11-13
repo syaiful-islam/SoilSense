@@ -12,4 +12,5 @@ interface SettingsRepository {
 
     suspend fun setPollIntervalSeconds(seconds: Int)
 
+    suspend fun setUseWallpaperColors(enabled: Boolean)
 }

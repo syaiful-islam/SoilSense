@@ -65,6 +65,8 @@ class FakeSettingsRepository(initial: SensorSettings = SensorSettings()) : Setti
 
     override suspend fun setPollIntervalSeconds(seconds: Int) = state.update { it.copy(pollIntervalSeconds = seconds) }
 
+    override suspend fun setUseWallpaperColors(enabled: Boolean) = state.update { it.copy(useWallpaperColors = enabled) }
+
 }
 
 class FakeHistoryRepository : HistoryRepository {

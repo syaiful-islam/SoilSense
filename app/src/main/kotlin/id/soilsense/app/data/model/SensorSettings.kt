@@ -6,6 +6,8 @@ data class SensorSettings(
     val slaveId: Int = SoilSensorRegisters.DEFAULT_SLAVE_ID,
     val baudRate: Int = SoilSensorRegisters.DEFAULT_BAUD_RATE,
     val pollIntervalSeconds: Int = DEFAULT_POLL_INTERVAL_SECONDS,
+    /** Material You colours from the wallpaper (Android 12+) instead of the app's blue-teal palette. */
+    val useWallpaperColors: Boolean = false,
 ) {
     companion object {
         /** Standard Modbus unicast range; 0 is broadcast and 248–255 are reserved. */

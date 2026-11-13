@@ -302,7 +302,13 @@ private fun MetricTile(metric: SoilMetric, reading: SoilReading?, modifier: Modi
                     color = Color.White,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
+                // In the title row, so the value keeps the full height and matches the other tiles.
+                if (metric == SoilMetric.PH && reading != null) {
+                    Spacer(Modifier.width(8.dp))
+                    TileChip(stringResource(PhClass.of(reading.ph).label))
+                }
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -331,9 +337,6 @@ private fun MetricTile(metric: SoilMetric, reading: SoilReading?, modifier: Modi
                         )
                     }
                 }
-            }
-            if (metric == SoilMetric.PH && reading != null) {
-                TileChip(stringResource(PhClass.of(reading.ph).label))
             }
         }
     }

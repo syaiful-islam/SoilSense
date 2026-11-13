@@ -130,6 +130,9 @@
     <string name="settings_baud_rate_hint">Must match the sensor (default 4800). Changing it here does not reconfigure the sensor.</string>
     <string name="settings_poll_interval">Reading interval</string>
     <string name="settings_poll_interval_value">Every %1$d s</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_wallpaper_colors">Wallpaper colours</string>
+    <string name="settings_wallpaper_colors_hint">Use Material You colours from your wallpaper (Android 12+) instead of the app’s blue palette.</string>
     <string name="settings_section_detect">Find sensor ID</string>
     <string name="settings_detect_body">Asks the probe for its slave ID using address 0xFF. Only one probe may be connected.</string>
     <string name="settings_detect_requires_connection">Connect the adapter first.</string>

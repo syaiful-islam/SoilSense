@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,6 +30,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -42,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -68,6 +71,7 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
         onSlaveIdChange = viewModel::setSlaveId,
         onBaudRateChange = viewModel::setBaudRate,
         onPollIntervalChange = viewModel::setPollInterval,
+        onWallpaperColorsChange = viewModel::setUseWallpaperColors,
         onDetectSlaveId = viewModel::detectSlaveId,
         onApplyDetectedSlaveId = viewModel::applyDetectedSlaveId,
     )
@@ -80,6 +84,7 @@ fun SettingsScreen(
     onSlaveIdChange: (Int) -> Unit,
     onBaudRateChange: (Int) -> Unit,
     onPollIntervalChange: (Int) -> Unit,
+    onWallpaperColorsChange: (Boolean) -> Unit,
     onDetectSlaveId: () -> Unit,
     onApplyDetectedSlaveId: () -> Unit,
     modifier: Modifier = Modifier,
@@ -115,7 +120,32 @@ fun SettingsScreen(
                     onApply = onApplyDetectedSlaveId,
                 )
             }
+            SettingsCard(R.string.settings_section_appearance) {
+                WallpaperColorsSwitch(checked = settings.useWallpaperColors, onCheckedChange = onWallpaperColorsChange)
+            }
         }
+    }
+}
+
+@Composable
+private fun WallpaperColorsSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            // The whole row is the touch target and is announced once as a switch.
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.settings_wallpaper_colors), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                stringResource(R.string.settings_wallpaper_colors_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -228,7 +258,7 @@ private fun PollIntervalSlider(seconds: Int, onChange: (Int) -> Unit) {
             onValueChange = { dragValue = it },
             onValueChangeFinished = { onChange(dragValue.roundToInt()) },
             valueRange = range.first.toFloat()..range.last.toFloat(),
-            steps = range.last - range.first - 1,
+            // Continuous track (no 59 tick dots); the value is rounded to whole seconds.
             modifier = Modifier.semantics { stateDescription = label },
         )
     }
@@ -294,6 +324,7 @@ private fun SettingsScreenPreview() {
             onSlaveIdChange = {},
             onBaudRateChange = {},
             onPollIntervalChange = {},
+            onWallpaperColorsChange = {},
             onDetectSlaveId = {},
             onApplyDetectedSlaveId = {},
         )

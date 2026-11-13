@@ -102,6 +102,9 @@
     <string name="settings_baud_rate_hint">Harus sama dengan sensor (bawaan 4800). Mengubahnya di sini tidak mengubah pengaturan sensor.</string>
     <string name="settings_poll_interval">Interval pembacaan</string>
     <string name="settings_poll_interval_value">Tiap %1$d detik</string>
+    <string name="settings_section_appearance">Tampilan</string>
+    <string name="settings_wallpaper_colors">Warna dari wallpaper</string>
+    <string name="settings_wallpaper_colors_hint">Pakai warna Material You dari wallpaper (Android 12+) sebagai ganti palet biru aplikasi.</string>
     <string name="settings_section_detect">Cari ID sensor</string>
     <string name="settings_detect_body">Menanyakan ID slave ke probe lewat alamat 0xFF. Hanya boleh satu probe yang terhubung.</string>
     <string name="settings_detect_requires_connection">Hubungkan adaptor terlebih dahulu.</string>
