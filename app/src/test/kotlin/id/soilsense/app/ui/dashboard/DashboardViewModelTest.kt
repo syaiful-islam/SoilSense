@@ -81,17 +81,14 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `readings are saved only while recording is enabled`() = runTest {
+    fun `polled readings are never saved automatically`() = runTest {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
         sensor.connect()
 
         sensor.emit(SensorSample.Success(testReading, timestampMillis = 1_000))
-        settings.setRecordingEnabled(true)
         sensor.emit(SensorSample.Success(testReading, timestampMillis = 2_000))
-        sensor.emit(SensorSample.Failure(SensorReadError.CorruptedResponse, timestampMillis = 3_000))
 
-        assertEquals(listOf(2_000L), history.saved.map { it.timestampMillis })
-        assertTrue(viewModel.uiState.value.isRecording)
+        assertTrue(history.saved.isEmpty())
     }
 
     @Test
@@ -102,11 +99,35 @@ class DashboardViewModelTest {
         sensor.connect()
         sensor.emit(SensorSample.Success(testReading, timestampMillis = 5_000))
 
-        viewModel.saveCurrentReading()
+        viewModel.saveCurrentReading("  Lahan A  ")
 
-        assertEquals(listOf(5_000L), history.saved.map { it.timestampMillis })
-        assertEquals(testReading, history.saved.single().reading)
-        assertEquals(listOf<DashboardEvent>(DashboardEvent.ReadingSaved), events)
+        val saved = history.saved.single()
+        assertEquals(5_000L, saved.timestampMillis)
+        assertEquals(testReading, saved.reading)
+        assertEquals("Lahan A", saved.name)
+        assertEquals(listOf<DashboardEvent>(DashboardEvent.ReadingSaved("Lahan A")), events)
+    }
+
+    @Test
+    fun `save without a name is allowed`() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+        sensor.connect()
+        sensor.emit(SensorSample.Success(testReading, timestampMillis = 5_000))
+
+        viewModel.saveCurrentReading("")
+
+        assertEquals("", history.saved.single().name)
+    }
+
+    @Test
+    fun `overlong names are cut to the maximum length`() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+        sensor.connect()
+        sensor.emit(SensorSample.Success(testReading, timestampMillis = 5_000))
+
+        viewModel.saveCurrentReading("x".repeat(100))
+
+        assertEquals(DashboardViewModel.MAX_NAME_LENGTH, history.saved.single().name.length)
     }
 
     @Test
@@ -115,17 +136,10 @@ class DashboardViewModelTest {
         val events = mutableListOf<DashboardEvent>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.toList(events) }
 
-        viewModel.saveCurrentReading()
+        viewModel.saveCurrentReading("Lahan A")
 
         assertTrue(history.saved.isEmpty())
         assertEquals(listOf<DashboardEvent>(DashboardEvent.NothingToSave), events)
-    }
-
-    @Test
-    fun `connect delegates to repository`() = runTest {
-        viewModel.connect()
-
-        assertEquals(1, sensor.connectCalls)
     }
 
     @Test

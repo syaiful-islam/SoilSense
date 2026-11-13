@@ -11,7 +11,7 @@ interface HistoryRepository {
 
     fun observeCount(): Flow<Int>
 
-    suspend fun save(timestampMillis: Long, reading: SoilReading)
+    suspend fun save(timestampMillis: Long, reading: SoilReading, name: String)
 
     suspend fun clear()
 

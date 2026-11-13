@@ -18,7 +18,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import id.soilsense.app.ui.dashboard.DashboardRoute
 import id.soilsense.app.ui.history.HistoryRoute
+import id.soilsense.app.ui.device.DeviceRoute
 import id.soilsense.app.ui.navigation.DashboardDestination
+import id.soilsense.app.ui.navigation.DeviceDestination
 import id.soilsense.app.ui.navigation.HistoryDestination
 import id.soilsense.app.ui.navigation.SettingsDestination
 import id.soilsense.app.ui.navigation.TopLevelDestination
@@ -48,9 +50,10 @@ fun SoilSenseApp(navController: NavHostController = rememberNavController()) {
     ) {
         NavHost(navController = navController, startDestination = DashboardDestination) {
             composable<DashboardDestination> {
-                DashboardRoute(onOpenData = { navController.navigateToTopLevel(TopLevelDestination.HISTORY) })
+                DashboardRoute(onOpenDevice = { navController.navigateToTopLevel(TopLevelDestination.DEVICE) })
             }
             composable<HistoryDestination> { HistoryRoute() }
+            composable<DeviceDestination> { DeviceRoute() }
             composable<SettingsDestination> { SettingsRoute() }
         }
     }

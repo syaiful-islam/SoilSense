@@ -20,6 +20,7 @@ class CsvFormatter(private val timeZone: TimeZone = TimeZone.getDefault()) {
         val r = item.reading
         return listOf(
             formatTimestamp(item.timestampMillis),
+            escape(item.name),
             "%.1f".format(Locale.ROOT, r.moisturePercent),
             "%.1f".format(Locale.ROOT, r.temperatureCelsius),
             r.conductivityMicroSiemensPerCm.toString(),
@@ -30,6 +31,16 @@ class CsvFormatter(private val timeZone: TimeZone = TimeZone.getDefault()) {
         ).joinToString(",")
     }
 
+    /**
+     * Quotes a user-typed field per RFC 4180. A leading =, +, - or @ is neutralised with an apostrophe
+     * so spreadsheets do not evaluate the name as a formula (CSV injection).
+     */
+    private fun escape(field: String): String {
+        val safe = if (field.firstOrNull() in FORMULA_PREFIXES) "'$field" else field
+        val needsQuotes = safe.any { it == ',' || it == '"' || it == '\n' || it == '\r' }
+        return if (needsQuotes) "\"" + safe.replace("\"", "\"\"") + "\"" else safe
+    }
+
     private fun formatTimestamp(millis: Long): String =
         // SimpleDateFormat is not thread-safe, so create one per call; export is not a hot path.
         SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.ROOT)
@@ -37,8 +48,10 @@ class CsvFormatter(private val timeZone: TimeZone = TimeZone.getDefault()) {
             .format(Date(millis))
 
     companion object {
+        private val FORMULA_PREFIXES = setOf('=', '+', '-', '@')
+
         const val HEADER: String =
-            "timestamp,moisture_percent,temperature_celsius,conductivity_us_cm,ph," +
+            "timestamp,name,moisture_percent,temperature_celsius,conductivity_us_cm,ph," +
                 "nitrogen_mg_kg,phosphorus_mg_kg,potassium_mg_kg"
     }
 }

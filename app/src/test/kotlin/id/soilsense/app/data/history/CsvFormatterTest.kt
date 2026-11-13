@@ -13,9 +13,9 @@ class CsvFormatterTest {
 
     @Test
     fun `row uses ISO timestamp and dot decimals`() {
-        val row = formatter.row(RecordedReading(id = 1, timestampMillis = 0, reading = testReading))
+        val row = formatter.row(RecordedReading(id = 1, timestampMillis = 0, reading = testReading, name = "Lahan A"))
 
-        assertEquals("1970-01-01T07:00:00+07:00,46.4,33.2,44,9.0,32,88,104", row)
+        assertEquals("1970-01-01T07:00:00+07:00,Lahan A,46.4,33.2,44,9.0,32,88,104", row)
     }
 
     @Test
@@ -23,8 +23,8 @@ class CsvFormatterTest {
         val previous = Locale.getDefault()
         try {
             Locale.setDefault(Locale.forLanguageTag("id-ID"))
-            val row = formatter.row(RecordedReading(id = 1, timestampMillis = 0, reading = testReading))
-            assertEquals("46.4", row.split(',')[1])
+            val row = formatter.row(RecordedReading(id = 1, timestampMillis = 0, reading = testReading, name = "Lahan A"))
+            assertEquals("46.4", row.split(',')[2])
         } finally {
             Locale.setDefault(previous)
         }
@@ -32,9 +32,23 @@ class CsvFormatterTest {
 
     @Test
     fun `header has one column per row value`() {
-        val row = formatter.row(RecordedReading(1, 0, testReading))
+        val row = formatter.row(RecordedReading(1, 0, testReading, ""))
 
         assertEquals(formatter.header().split(',').size, row.split(',').size)
         assertEquals(listOf("32", "88", "104"), row.split(',').takeLast(3))
+    }
+
+    @Test
+    fun `names with commas and quotes are quoted`() {
+        val row = formatter.row(RecordedReading(1, 0, testReading, "Lahan \"A\", baris 3"))
+
+        assertEquals("\"Lahan \"\"A\"\", baris 3\"", row.removePrefix("1970-01-01T07:00:00+07:00,").substringBefore(",46.4"))
+    }
+
+    @Test
+    fun `names that look like formulas are neutralised`() {
+        val row = formatter.row(RecordedReading(1, 0, testReading, "=HYPERLINK(1)"))
+
+        assertEquals("'=HYPERLINK(1)", row.split(',')[1])
     }
 }

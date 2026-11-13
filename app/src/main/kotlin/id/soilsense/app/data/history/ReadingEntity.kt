@@ -11,6 +11,8 @@ import id.soilsense.modbus.soil.SoilReading
 data class ReadingEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "timestamp_millis") val timestampMillis: Long,
+    // Added in schema version 2 (see SoilSenseDatabase.MIGRATION_1_2); the default must match the migration.
+    @ColumnInfo(name = "name", defaultValue = "") val name: String = "",
     @ColumnInfo(name = "moisture_percent") val moisturePercent: Double,
     @ColumnInfo(name = "temperature_celsius") val temperatureCelsius: Double,
     @ColumnInfo(name = "conductivity_us_cm") val conductivityMicroSiemensPerCm: Int,
@@ -27,6 +29,7 @@ data class ReadingEntity(
 fun ReadingEntity.toModel(): RecordedReading = RecordedReading(
     id = id,
     timestampMillis = timestampMillis,
+    name = name,
     reading = SoilReading(
         moisturePercent = moisturePercent,
         temperatureCelsius = temperatureCelsius,
@@ -38,8 +41,9 @@ fun ReadingEntity.toModel(): RecordedReading = RecordedReading(
     ),
 )
 
-fun SoilReading.toEntity(timestampMillis: Long): ReadingEntity = ReadingEntity(
+fun SoilReading.toEntity(timestampMillis: Long, name: String = ""): ReadingEntity = ReadingEntity(
     timestampMillis = timestampMillis,
+    name = name,
     moisturePercent = moisturePercent,
     temperatureCelsius = temperatureCelsius,
     conductivityMicroSiemensPerCm = conductivityMicroSiemensPerCm,

@@ -6,7 +6,6 @@ data class SensorSettings(
     val slaveId: Int = SoilSensorRegisters.DEFAULT_SLAVE_ID,
     val baudRate: Int = SoilSensorRegisters.DEFAULT_BAUD_RATE,
     val pollIntervalSeconds: Int = DEFAULT_POLL_INTERVAL_SECONDS,
-    val recordingEnabled: Boolean = false,
 ) {
     companion object {
         /** Standard Modbus unicast range; 0 is broadcast and 248–255 are reserved. */

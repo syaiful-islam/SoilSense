@@ -52,7 +52,9 @@ object StorageModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): SoilSenseDatabase =
-        Room.databaseBuilder(context, SoilSenseDatabase::class.java, SoilSenseDatabase.NAME).build()
+        Room.databaseBuilder(context, SoilSenseDatabase::class.java, SoilSenseDatabase.NAME)
+            .addMigrations(SoilSenseDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideReadingDao(database: SoilSenseDatabase): ReadingDao = database.readingDao()

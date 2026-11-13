@@ -12,5 +12,4 @@ interface SettingsRepository {
 
     suspend fun setPollIntervalSeconds(seconds: Int)
 
-    suspend fun setRecordingEnabled(enabled: Boolean)
 }

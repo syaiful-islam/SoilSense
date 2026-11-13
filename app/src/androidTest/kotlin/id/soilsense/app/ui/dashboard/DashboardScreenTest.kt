@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import id.soilsense.app.R
@@ -27,44 +28,43 @@ class DashboardScreenTest {
     private val adapter = UsbAdapterInfo("CH34x", 0x1A86, 0x7523)
     private val reading = SoilReading(42.2, 12.5, 1378, 7.9, 68, 96, 220)
 
-    private fun show(state: DashboardUiState, onConnect: () -> Unit = {}, onSave: () -> Unit = {}, onData: () -> Unit = {}) {
+    private fun show(state: DashboardUiState, onSave: (String) -> Unit = {}, onOpenDevice: () -> Unit = {}) {
         composeRule.setContent {
             SoilSenseTheme(dynamicColor = false) {
                 DashboardScreen(
                     uiState = state,
                     snackbarHostState = SnackbarHostState(),
-                    onConnect = onConnect,
-                    onDisconnect = {},
                     onSaveReading = onSave,
-                    onOpenData = onData,
+                    onOpenDevice = onOpenDevice,
                 )
             }
         }
     }
 
     @Test
-    fun connectButtonInvokesCallback() {
-        var connectClicks = 0
-        show(DashboardUiState(connection = ConnectionState.Disconnected(adapter)), onConnect = { connectClicks++ })
+    fun notConnectedStripOpensDeviceTab() {
+        var opens = 0
+        show(DashboardUiState(connection = ConnectionState.Disconnected(adapter)), onOpenDevice = { opens++ })
 
-        composeRule.onNodeWithText(context.getString(R.string.action_connect)).performClick()
+        composeRule.onNodeWithText(context.getString(R.string.action_open_device)).performClick()
 
-        assertEquals(1, connectClicks)
+        assertEquals(1, opens)
     }
 
     @Test
     fun showsAllSevenParametersAndSaves() {
-        var saves = 0
+        val saves = mutableListOf<String>()
         show(
             DashboardUiState(connection = ConnectionState.Connected(adapter, 4800), latestReading = reading),
-            onSave = { saves++ },
+            onSave = { saves += it },
         )
 
         listOf("12.5", "42.2", "1378", "7.9", "68", "96", "220").forEach {
             composeRule.onNodeWithText(it).assertExists()
         }
+        composeRule.onNodeWithText(context.getString(R.string.save_name_label)).performTextInput("Lahan A")
         composeRule.onNodeWithText(context.getString(R.string.action_save_reading)).performClick()
-        assertEquals(1, saves)
+        assertEquals(listOf("Lahan A"), saves)
     }
 
     @Test

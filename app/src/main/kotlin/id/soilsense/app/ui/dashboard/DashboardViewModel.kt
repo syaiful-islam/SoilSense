@@ -15,8 +15,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
@@ -29,13 +27,12 @@ data class DashboardUiState(
     val lastUpdatedMillis: Long? = null,
     /** Error of the most recent poll; cleared by the next successful one. */
     val lastError: SensorReadError? = null,
-    val isRecording: Boolean = false,
     val pollIntervalSeconds: Int = 0,
 )
 
 /** One-off results shown as a snackbar. */
 sealed interface DashboardEvent {
-    data object ReadingSaved : DashboardEvent
+    data class ReadingSaved(val name: String) : DashboardEvent
 
     /** Nothing has been read yet, so there is nothing to save. */
     data object NothingToSave : DashboardEvent
@@ -58,12 +55,8 @@ class DashboardViewModel @Inject constructor(
     private val _events = Channel<DashboardEvent>(Channel.BUFFERED)
     val events: Flow<DashboardEvent> = _events.receiveAsFlow()
 
+    // Readings are only stored when the user taps Save (saveCurrentReading); polling never writes history.
     private val samples = sensorRepository.liveReadings()
-        .onEach { sample ->
-            if (sample is SensorSample.Success && settingsRepository.settings.first().recordingEnabled) {
-                historyRepository.save(sample.timestampMillis, sample.reading)
-            }
-        }
         .scan(SampleState()) { state, sample ->
             when (sample) {
                 is SensorSample.Success -> SampleState(
@@ -86,7 +79,6 @@ class DashboardViewModel @Inject constructor(
             latestReading = sampleState.latestReading,
             lastUpdatedMillis = sampleState.lastUpdatedMillis,
             lastError = sampleState.lastError.takeIf { connection is ConnectionState.Connected },
-            isRecording = settings.recordingEnabled,
             pollIntervalSeconds = settings.pollIntervalSeconds,
         )
     }.stateIn(
@@ -97,16 +89,8 @@ class DashboardViewModel @Inject constructor(
         initialValue = DashboardUiState(connection = sensorRepository.connectionState.value),
     )
 
-    fun connect() {
-        viewModelScope.launch { sensorRepository.connect() }
-    }
-
-    fun disconnect() {
-        viewModelScope.launch { sensorRepository.disconnect() }
-    }
-
-    /** Stores the reading currently on screen in the history, independent of automatic recording. */
-    fun saveCurrentReading() {
+    /** Stores the reading currently on screen in the history under [name] (may be blank). */
+    fun saveCurrentReading(name: String) {
         val state = uiState.value
         val reading = state.latestReading
         val timestamp = state.lastUpdatedMillis
@@ -114,9 +98,14 @@ class DashboardViewModel @Inject constructor(
             if (reading == null || timestamp == null) {
                 _events.send(DashboardEvent.NothingToSave)
             } else {
-                historyRepository.save(timestamp, reading)
-                _events.send(DashboardEvent.ReadingSaved)
+                val trimmed = name.trim().take(MAX_NAME_LENGTH)
+                historyRepository.save(timestamp, reading, trimmed)
+                _events.send(DashboardEvent.ReadingSaved(trimmed))
             }
         }
+    }
+
+    companion object {
+        const val MAX_NAME_LENGTH: Int = 40
     }
 }

@@ -5,8 +5,10 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import id.soilsense.app.R
 import id.soilsense.app.data.model.SensorReadError
+import id.soilsense.app.data.model.UsbAdapterInfo
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -36,3 +38,7 @@ fun SensorReadError.toText(): ReadErrorText = when (this) {
     SensorReadError.ConnectionLost -> ReadErrorText(R.string.error_connection_lost, R.string.error_connection_lost_hint)
     SensorReadError.NotConnected -> ReadErrorText(R.string.error_not_connected, R.string.error_not_connected_hint)
 }
+
+/** "CH34x (1A86:7523)". */
+@Composable
+fun UsbAdapterInfo.label(): String = stringResource(R.string.adapter_label, chipName, usbId)

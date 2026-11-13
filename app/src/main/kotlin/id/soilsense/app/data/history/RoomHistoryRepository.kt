@@ -27,8 +27,8 @@ class RoomHistoryRepository @Inject constructor(
 
     override fun observeCount(): Flow<Int> = dao.observeCount()
 
-    override suspend fun save(timestampMillis: Long, reading: SoilReading) {
-        dao.insert(reading.toEntity(timestampMillis))
+    override suspend fun save(timestampMillis: Long, reading: SoilReading, name: String) {
+        dao.insert(reading.toEntity(timestampMillis, name.trim()))
     }
 
     override suspend fun clear() = dao.deleteAll()

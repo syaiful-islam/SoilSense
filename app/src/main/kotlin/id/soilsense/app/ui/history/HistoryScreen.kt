@@ -200,7 +200,9 @@ private fun HistoryList(state: HistoryUiState.Loaded) {
 private fun HistoryRow(item: RecordedReading, timestamp: String) {
     val r = item.reading
     ListItem(
-        headlineContent = { Text(timestamp) },
+        // Named saves lead with their name; unnamed ones (and older readings) with the time.
+        overlineContent = if (item.name.isNotBlank()) ({ Text(timestamp) }) else null,
+        headlineContent = { Text(item.name.ifBlank { timestamp }) },
         supportingContent = {
             Column {
                 Text(
@@ -227,7 +229,7 @@ private fun HistoryScreenPreview() {
     SoilSenseTheme(dynamicColor = false) {
         HistoryScreen(
             uiState = HistoryUiState.Loaded(
-                items = listOf(RecordedReading(2, 1_761_390_000_000, reading), RecordedReading(1, 1_761_389_998_000, reading)),
+                items = listOf(RecordedReading(2, 1_761_390_000_000, reading, "Lahan A"), RecordedReading(1, 1_761_389_998_000, reading, "")),
                 totalCount = 2,
                 isExporting = false,
             ),

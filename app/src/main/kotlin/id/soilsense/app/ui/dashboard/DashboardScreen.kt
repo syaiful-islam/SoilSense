@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,6 +21,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -26,12 +30,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -42,18 +44,23 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,10 +70,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.soilsense.app.R
-import id.soilsense.app.data.model.ConnectionFailure
 import id.soilsense.app.data.model.ConnectionState
 import id.soilsense.app.data.model.SensorReadError
 import id.soilsense.app.data.model.UsbAdapterInfo
+import id.soilsense.app.ui.common.label
 import id.soilsense.app.ui.common.rememberTimeFormatter
 import id.soilsense.app.ui.common.toText
 import id.soilsense.app.ui.theme.SoilSenseTheme
@@ -74,7 +81,7 @@ import id.soilsense.modbus.soil.SoilReading
 
 @Composable
 fun DashboardRoute(
-    onOpenData: () -> Unit,
+    onOpenDevice: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -84,7 +91,12 @@ fun DashboardRoute(
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             val message = when (event) {
-                DashboardEvent.ReadingSaved -> resources.getString(R.string.dashboard_reading_saved)
+                is DashboardEvent.ReadingSaved ->
+                    if (event.name.isBlank()) {
+                        resources.getString(R.string.dashboard_reading_saved)
+                    } else {
+                        resources.getString(R.string.dashboard_reading_saved_named, event.name)
+                    }
                 DashboardEvent.NothingToSave -> resources.getString(R.string.dashboard_nothing_to_save)
             }
             snackbarHostState.showSnackbar(message)
@@ -94,10 +106,8 @@ fun DashboardRoute(
     DashboardScreen(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
-        onConnect = viewModel::connect,
-        onDisconnect = viewModel::disconnect,
         onSaveReading = viewModel::saveCurrentReading,
-        onOpenData = onOpenData,
+        onOpenDevice = onOpenDevice,
     )
 }
 
@@ -109,10 +119,8 @@ private val HeaderBlue = Color(0xFF1976D2)
 fun DashboardScreen(
     uiState: DashboardUiState,
     snackbarHostState: SnackbarHostState,
-    onConnect: () -> Unit,
-    onDisconnect: () -> Unit,
-    onSaveReading: () -> Unit,
-    onOpenData: () -> Unit,
+    onSaveReading: (name: String) -> Unit,
+    onOpenDevice: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -127,13 +135,7 @@ fun DashboardScreen(
                 ),
             )
         },
-        bottomBar = {
-            DashboardActions(
-                canSave = uiState.latestReading != null,
-                onSaveReading = onSaveReading,
-                onOpenData = onOpenData,
-            )
-        },
+        bottomBar = { SaveBar(canSave = uiState.latestReading != null, onSave = onSaveReading) },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -142,21 +144,14 @@ fun DashboardScreen(
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            when (val connection = uiState.connection) {
-                is ConnectionState.Connected -> {
-                    ConnectedStrip(
-                        connection = connection,
-                        isRecording = uiState.isRecording,
-                        lastUpdatedMillis = uiState.lastUpdatedMillis,
-                        pollIntervalSeconds = uiState.pollIntervalSeconds,
-                        onDisconnect = onDisconnect,
-                    )
-                    uiState.lastError?.let { ReadErrorBanner(it) }
-                }
-                else -> {
-                    ConnectionCard(connection, onConnect = onConnect, onDisconnect = onDisconnect)
-                    if (connection is ConnectionState.NoDevice) WiringHelpCard()
-                }
+            StatusStrip(
+                connection = uiState.connection,
+                lastUpdatedMillis = uiState.lastUpdatedMillis,
+                pollIntervalSeconds = uiState.pollIntervalSeconds,
+                onOpenDevice = onOpenDevice,
+            )
+            if (uiState.connection is ConnectionState.Connected) {
+                uiState.lastError?.let { ReadErrorBanner(it) }
             }
             MetricGrid(
                 metrics = metricsOf(uiState.latestReading),
@@ -251,80 +246,96 @@ private fun MetricIconView(icon: MetricIcon) {
     }
 }
 
+/** Manual save, at the very bottom: an optional name plus SAVE. Nothing is stored without this button. */
 @Composable
-private fun DashboardActions(canSave: Boolean, onSaveReading: () -> Unit, onOpenData: () -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = onSaveReading,
-                    enabled = canSave,
-                    colors = ButtonDefaults.buttonColors(containerColor = HeaderBlue, contentColor = Color.White),
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(painterResource(R.drawable.ic_save), contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_save_reading))
-                }
-                FilledTonalButton(onClick = onOpenData, modifier = Modifier.weight(1f)) {
-                    Icon(painterResource(R.drawable.ic_history), contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_open_data))
-                }
-            }
-            Text(
-                stringResource(R.string.dashboard_footer),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+private fun SaveBar(canSave: Boolean, onSave: (name: String) -> Unit) {
+    var name by rememberSaveable { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+    val save = {
+        onSave(name)
+        name = ""
+        focusManager.clearFocus()
+    }
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        // Keeps the field above the keyboard while typing a name.
+        modifier = Modifier.imePadding(),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+        ) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it.take(DashboardViewModel.MAX_NAME_LENGTH) },
+                label = { Text(stringResource(R.string.save_name_label)) },
+                placeholder = { Text(stringResource(R.string.save_name_placeholder)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { if (canSave) save() else focusManager.clearFocus() }),
+                modifier = Modifier.weight(1f),
             )
+            Button(
+                onClick = save,
+                enabled = canSave,
+                colors = ButtonDefaults.buttonColors(containerColor = HeaderBlue, contentColor = Color.White),
+                modifier = Modifier.heightIn(min = 56.dp),
+            ) {
+                Icon(painterResource(R.drawable.ic_save), contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.action_save_reading))
+            }
         }
     }
 }
 
-/** Compact connection status while connected, so the tiles get most of the screen. */
+/** One line about the link to the probe; connecting and wiring live on the Device tab. */
 @Composable
-private fun ConnectedStrip(
-    connection: ConnectionState.Connected,
-    isRecording: Boolean,
+private fun StatusStrip(
+    connection: ConnectionState,
     lastUpdatedMillis: Long?,
     pollIntervalSeconds: Int,
-    onDisconnect: () -> Unit,
+    onOpenDevice: () -> Unit,
 ) {
+    val connected = connection as? ConnectionState.Connected
     val formatTime = rememberTimeFormatter("jms")
-    val updated = if (lastUpdatedMillis == null) {
-        stringResource(R.string.status_reading)
-    } else {
-        stringResource(R.string.status_updated, formatTime(lastUpdatedMillis), pollIntervalSeconds)
-    }
-    val status = if (isRecording) stringResource(R.string.status_with_recording, updated) else updated
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(10.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = 12.dp, end = 4.dp),
         ) {
             Icon(
-                painterResource(R.drawable.ic_check_circle),
+                painterResource(if (connected != null) R.drawable.ic_check_circle else R.drawable.ic_usb),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = if (connected != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
             )
             Spacer(Modifier.width(8.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    stringResource(
-                        R.string.connection_connected_summary,
-                        connection.device.label(),
-                        connection.baudRate,
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(Modifier.weight(1f).padding(vertical = 4.dp)) {
+                if (connected != null) {
+                    Text(
+                        stringResource(R.string.connection_connected_summary, connected.device.label(), connected.baudRate),
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        if (lastUpdatedMillis == null) {
+                            stringResource(R.string.status_reading)
+                        } else {
+                            stringResource(R.string.status_updated, formatTime(lastUpdatedMillis), pollIntervalSeconds)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Text(stringResource(R.string.status_not_connected), style = MaterialTheme.typography.bodyMedium)
+                }
             }
-            TextButton(onClick = onDisconnect) { Text(stringResource(R.string.action_disconnect)) }
+            if (connected == null) {
+                TextButton(onClick = onOpenDevice) { Text(stringResource(R.string.action_open_device)) }
+            }
         }
     }
 }
@@ -346,131 +357,6 @@ private fun ReadErrorBanner(error: SensorReadError) {
                 )
                 Text(stringResource(text.hint), style = MaterialTheme.typography.bodyMedium)
             }
-        }
-    }
-}
-
-@Composable
-private fun ConnectionCard(
-    connection: ConnectionState,
-    onConnect: () -> Unit,
-    onDisconnect: () -> Unit,
-) {
-    val content = connection.toCardContent()
-    val containerColor = when (connection) {
-        is ConnectionState.Connected -> MaterialTheme.colorScheme.primaryContainer
-        is ConnectionState.Failed, ConnectionState.PermissionDenied -> MaterialTheme.colorScheme.errorContainer
-        else -> MaterialTheme.colorScheme.surfaceContainerHigh
-    }
-    Card(colors = CardDefaults.cardColors(containerColor = containerColor), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (content.inProgress) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
-                } else {
-                    Icon(painterResource(content.icon), contentDescription = null)
-                }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(content.title), style = MaterialTheme.typography.titleMedium)
-                    content.subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-                }
-            }
-            content.action?.let { action ->
-                if (action == CardAction.DISCONNECT) {
-                    OutlinedButton(onClick = onDisconnect) { Text(stringResource(R.string.action_disconnect)) }
-                } else {
-                    Button(onClick = onConnect) { Text(stringResource(action.label)) }
-                }
-            }
-        }
-    }
-}
-
-private enum class CardAction(@param:StringRes val label: Int) {
-    CONNECT(R.string.action_connect),
-    RETRY(R.string.action_retry),
-    REQUEST_PERMISSION(R.string.action_request_permission),
-    DISCONNECT(R.string.action_disconnect),
-}
-
-private data class CardContent(
-    @param:StringRes val title: Int,
-    val subtitle: String?,
-    @param:DrawableRes val icon: Int,
-    val action: CardAction?,
-    val inProgress: Boolean = false,
-)
-
-@Composable
-private fun ConnectionState.toCardContent(): CardContent = when (this) {
-    ConnectionState.NoDevice -> CardContent(
-        title = R.string.connection_no_device,
-        subtitle = stringResource(R.string.connection_no_device_hint),
-        icon = R.drawable.ic_info,
-        action = CardAction.RETRY,
-    )
-    is ConnectionState.Disconnected -> CardContent(
-        title = R.string.connection_ready,
-        subtitle = device.label(),
-        icon = R.drawable.ic_info,
-        action = CardAction.CONNECT,
-    )
-    ConnectionState.RequestingPermission -> CardContent(
-        title = R.string.connection_requesting_permission,
-        subtitle = null,
-        icon = R.drawable.ic_info,
-        action = null,
-        inProgress = true,
-    )
-    ConnectionState.PermissionDenied -> CardContent(
-        title = R.string.connection_permission_denied,
-        subtitle = stringResource(R.string.connection_permission_denied_hint),
-        icon = R.drawable.ic_warning,
-        action = CardAction.REQUEST_PERMISSION,
-    )
-    ConnectionState.Connecting -> CardContent(
-        title = R.string.connection_connecting,
-        subtitle = null,
-        icon = R.drawable.ic_info,
-        action = null,
-        inProgress = true,
-    )
-    is ConnectionState.Connected -> CardContent(
-        title = R.string.connection_connected,
-        subtitle = stringResource(R.string.connection_connected_detail, device.label(), baudRate),
-        icon = R.drawable.ic_check_circle,
-        action = CardAction.DISCONNECT,
-    )
-    is ConnectionState.Failed -> when (reason) {
-        ConnectionFailure.OPEN_FAILED -> CardContent(
-            title = R.string.connection_open_failed,
-            subtitle = stringResource(R.string.connection_open_failed_hint),
-            icon = R.drawable.ic_warning,
-            action = CardAction.RETRY,
-        )
-        ConnectionFailure.CONNECTION_LOST -> CardContent(
-            title = R.string.connection_lost,
-            subtitle = stringResource(R.string.connection_lost_hint),
-            icon = R.drawable.ic_warning,
-            action = CardAction.RETRY,
-        )
-    }
-}
-
-@Composable
-private fun UsbAdapterInfo.label(): String = stringResource(R.string.adapter_label, chipName, usbId)
-
-@Composable
-private fun WiringHelpCard() {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                stringResource(R.string.wiring_title),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(stringResource(R.string.wiring_body), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -593,14 +479,11 @@ private fun DashboardConnectedPreview() {
                 connection = ConnectionState.Connected(previewAdapter, 4800),
                 latestReading = previewReading,
                 lastUpdatedMillis = 0L,
-                isRecording = true,
                 pollIntervalSeconds = 2,
             ),
             snackbarHostState = remember { SnackbarHostState() },
-            onConnect = {},
-            onDisconnect = {},
             onSaveReading = {},
-            onOpenData = {},
+            onOpenDevice = {},
         )
     }
 }
@@ -617,10 +500,8 @@ private fun DashboardErrorWidePreview() {
                 pollIntervalSeconds = 2,
             ),
             snackbarHostState = remember { SnackbarHostState() },
-            onConnect = {},
-            onDisconnect = {},
             onSaveReading = {},
-            onOpenData = {},
+            onOpenDevice = {},
         )
     }
 }
@@ -632,10 +513,8 @@ private fun DashboardNoDevicePreview() {
         DashboardScreen(
             uiState = DashboardUiState(connection = ConnectionState.NoDevice),
             snackbarHostState = remember { SnackbarHostState() },
-            onConnect = {},
-            onDisconnect = {},
             onSaveReading = {},
-            onOpenData = {},
+            onOpenDevice = {},
         )
     }
 }

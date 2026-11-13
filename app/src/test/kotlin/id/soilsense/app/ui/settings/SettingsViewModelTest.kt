@@ -64,13 +64,6 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `automatic recording can be switched on`() = runTest {
-        viewModel.setRecording(true)
-
-        assertEquals(true, settings.current.recordingEnabled)
-    }
-
-    @Test
     fun `connection state is exposed`() = runTest {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
 

@@ -43,11 +43,12 @@ class ReadingDaoTest {
 
     @Test
     fun roundTripPreservesAllParameters() = runTest {
-        dao.insert(reading.toEntity(1_000L))
+        dao.insert(reading.toEntity(1_000L, name = "Lahan A"))
 
         val stored = dao.getAllOldestFirst().single().toModel()
 
         assertEquals(reading, stored.reading)
+        assertEquals("Lahan A", stored.name)
     }
 
     @Test

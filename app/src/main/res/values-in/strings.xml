@@ -2,6 +2,7 @@
 <resources>
     <string name="nav_dashboard">Langsung</string>
     <string name="nav_history">Riwayat</string>
+    <string name="nav_device">Perangkat</string>
     <string name="nav_settings">Pengaturan</string>
 
     <string name="action_connect">Hubungkan</string>
@@ -32,17 +33,16 @@
     <string name="connection_lost_hint">Adaptor tercabut atau koneksi USB bermasalah.</string>
 
     <string name="dashboard_title">Detektor Parameter Tanah</string>
-    <string name="dashboard_footer">Data tersimpan ada di Riwayat; ekspor ke CSV (Excel) dari sana.</string>
     <string name="dashboard_reading_saved">Data tersimpan ke Riwayat</string>
+    <string name="dashboard_reading_saved_named">“%1$s” tersimpan ke Riwayat</string>
+    <string name="save_name_label">Nama (opsional)</string>
+    <string name="save_name_placeholder">mis. Lahan A, baris 3</string>
+    <string name="status_not_connected">Sensor belum terhubung</string>
+    <string name="action_open_device">Hubungkan</string>
     <string name="dashboard_nothing_to_save">Belum ada data untuk disimpan</string>
-    <string name="action_save_reading">Simpan data</string>
-    <string name="action_open_data">Data</string>
     <string name="connection_connected_summary">Terhubung · %1$s · %2$d bps</string>
-    <string name="status_with_recording">%1$s · ● Merekam</string>
     <string name="status_reading">Membaca sensor…</string>
     <string name="status_updated">Diperbarui %1$s · tiap %2$d dtk</string>
-    <string name="recording_title">Rekam otomatis</string>
-    <string name="recording_hint">Simpan setiap pembacaan ke Riwayat selama layar Langsung terbuka.</string>
 
     <string name="metric_moisture">Kelembapan</string>
     <string name="metric_temperature">Suhu</string>
@@ -61,13 +61,13 @@
     <string name="error_connection_lost">Koneksi USB terputus</string>
     <string name="error_connection_lost_hint">Hubungkan ulang adaptor.</string>
     <string name="error_not_connected">Belum terhubung ke sensor</string>
-    <string name="error_not_connected_hint">Hubungkan adaptor di layar Langsung terlebih dahulu.</string>
+    <string name="error_not_connected_hint">Hubungkan adaptor di tab Perangkat terlebih dahulu.</string>
 
     <string name="wiring_title">Pengkabelan</string>
     <string name="wiring_body">Sensor → adaptor USB-RS485:\n• Cokelat (V+) → catu daya 5–24 V DC (+)\n• Hitam (GND) → catu daya (−) dan GND adaptor\n• Kuning (A+) → terminal A+ / 485+ adaptor\n• Biru (B−) → terminal B− / 485− adaptor\nColokkan adaptor ke ponsel lewat kabel OTG. Bawaan sensor: ID 1, 4800 bps, 8N1.</string>
 
     <string name="history_empty_title">Belum ada data tersimpan</string>
-    <string name="history_empty_body">Ketuk “Simpan data” di layar Langsung, atau aktifkan “Rekam otomatis” di Pengaturan.</string>
+    <string name="history_empty_body">Isi nama lalu ketuk SAVE di bagian bawah layar Langsung.</string>
     <plurals name="history_summary">
         <item quantity="other">%1$d data tersimpan · menampilkan %2$d terbaru</item>
     </plurals>

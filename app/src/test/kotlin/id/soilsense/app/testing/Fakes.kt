@@ -65,7 +65,6 @@ class FakeSettingsRepository(initial: SensorSettings = SensorSettings()) : Setti
 
     override suspend fun setPollIntervalSeconds(seconds: Int) = state.update { it.copy(pollIntervalSeconds = seconds) }
 
-    override suspend fun setRecordingEnabled(enabled: Boolean) = state.update { it.copy(recordingEnabled = enabled) }
 }
 
 class FakeHistoryRepository : HistoryRepository {
@@ -77,8 +76,10 @@ class FakeHistoryRepository : HistoryRepository {
 
     override fun observeCount(): Flow<Int> = rows.map { it.size }
 
-    override suspend fun save(timestampMillis: Long, reading: SoilReading) =
-        rows.update { it + RecordedReading(id = it.size + 1L, timestampMillis = timestampMillis, reading = reading) }
+    override suspend fun save(timestampMillis: Long, reading: SoilReading, name: String) =
+        rows.update {
+            it + RecordedReading(id = it.size + 1L, timestampMillis = timestampMillis, reading = reading, name = name)
+        }
 
     override suspend fun clear() = rows.update { emptyList() }
 

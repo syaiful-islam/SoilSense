@@ -5,6 +5,7 @@
     <!-- Navigation -->
     <string name="nav_dashboard">Live</string>
     <string name="nav_history">History</string>
+    <string name="nav_device">Device</string>
     <string name="nav_settings">Settings</string>
 
     <!-- Actions -->
@@ -13,6 +14,8 @@
     <string name="action_retry">Try again</string>
     <string name="action_request_permission">Allow USB access</string>
     <string name="action_save">Save</string>
+    <!-- Shown exactly as the user asked for it, in every language. -->
+    <string name="action_save_reading" translatable="false">SAVE</string>
     <string name="action_detect">Detect ID</string>
     <string name="action_use_detected_id">Use this ID</string>
     <string name="action_export_csv">Export CSV</string>
@@ -38,20 +41,19 @@
 
     <!-- Dashboard -->
     <string name="dashboard_title">Soil Parameter Detector</string>
-    <string name="dashboard_footer">Saved readings are in History; export them there as CSV for Excel.</string>
     <string name="dashboard_reading_saved">Reading saved to History</string>
+    <string name="dashboard_reading_saved_named">Saved “%1$s” to History</string>
+    <string name="save_name_label">Name (optional)</string>
+    <string name="save_name_placeholder">e.g. Field A, row 3</string>
+    <string name="status_not_connected">Sensor not connected</string>
+    <string name="action_open_device">Connect</string>
     <string name="dashboard_nothing_to_save">No reading to save yet</string>
-    <string name="action_save_reading">Save reading</string>
-    <string name="action_open_data">Data</string>
     <string name="connection_connected_summary">Connected · %1$s · %2$d bps</string>
-    <string name="status_with_recording">%1$s · ● Recording</string>
     <string name="symbol_nitrogen" translatable="false">N</string>
     <string name="symbol_phosphorus" translatable="false">P</string>
     <string name="symbol_potassium" translatable="false">K</string>
     <string name="status_reading">Reading sensor…</string>
     <string name="status_updated">Updated %1$s · every %2$d s</string>
-    <string name="recording_title">Record automatically</string>
-    <string name="recording_hint">Store every reading in History while the Live screen is open.</string>
 
     <string name="metric_moisture">Moisture</string>
     <string name="metric_temperature">Temperature</string>
@@ -79,14 +81,14 @@
     <string name="error_connection_lost">USB connection lost</string>
     <string name="error_connection_lost_hint">Reconnect the adapter.</string>
     <string name="error_not_connected">Not connected to the sensor</string>
-    <string name="error_not_connected_hint">Connect the adapter on the Live screen first.</string>
+    <string name="error_not_connected_hint">Connect the adapter on the Device tab first.</string>
 
     <string name="wiring_title">Wiring</string>
     <string name="wiring_body">Sensor → USB-RS485 adapter:\n• Brown (V+) → power supply 5–24 V DC (+)\n• Black (GND) → power supply (−) and adapter GND\n• Yellow (A+) → adapter A+ / 485+\n• Blue (B−) → adapter B− / 485−\nPlug the adapter into the phone through an OTG cable. Sensor defaults: ID 1, 4800 bps, 8N1.</string>
 
     <!-- History -->
     <string name="history_empty_title">No saved readings yet</string>
-    <string name="history_empty_body">Tap “Save reading” on the Live screen, or turn on “Record automatically” in Settings.</string>
+    <string name="history_empty_body">Type a name and tap SAVE at the bottom of the Live screen.</string>
     <plurals name="history_summary">
         <item quantity="one">%1$d reading stored · showing latest %2$d</item>
         <item quantity="other">%1$d readings stored · showing latest %2$d</item>

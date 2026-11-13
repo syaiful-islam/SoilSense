@@ -2,7 +2,6 @@ package id.soilsense.app.data.settings
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -44,9 +43,6 @@ class DataStoreSettingsRepository @Inject constructor(
         dataStore.edit { it[Keys.POLL_INTERVAL_SECONDS] = seconds }
     }
 
-    override suspend fun setRecordingEnabled(enabled: Boolean) {
-        dataStore.edit { it[Keys.RECORDING_ENABLED] = enabled }
-    }
 
     private fun Preferences.toSettings(): SensorSettings {
         val defaults = SensorSettings()
@@ -57,7 +53,6 @@ class DataStoreSettingsRepository @Inject constructor(
             pollIntervalSeconds = this[Keys.POLL_INTERVAL_SECONDS]
                 ?.takeIf { it in SensorSettings.POLL_INTERVAL_RANGE_SECONDS }
                 ?: defaults.pollIntervalSeconds,
-            recordingEnabled = this[Keys.RECORDING_ENABLED] ?: defaults.recordingEnabled,
         )
     }
 
@@ -65,6 +60,5 @@ class DataStoreSettingsRepository @Inject constructor(
         val SLAVE_ID = intPreferencesKey("slave_id")
         val BAUD_RATE = intPreferencesKey("baud_rate")
         val POLL_INTERVAL_SECONDS = intPreferencesKey("poll_interval_seconds")
-        val RECORDING_ENABLED = booleanPreferencesKey("recording_enabled")
     }
 }
