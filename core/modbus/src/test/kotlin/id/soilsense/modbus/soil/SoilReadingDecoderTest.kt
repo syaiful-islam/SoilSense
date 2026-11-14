@@ -40,6 +40,14 @@ class SoilReadingDecoderTest {
     }
 
     @Test
+    fun `all registers are signed like in the vendor config tool`() {
+        // An EC offset can drive the result below zero: 0xFFF6 = -10.
+        val reading = SoilReadingDecoder.decode(intArrayOf(0, 0, 0xFFF6, 0, 0, 0, 0))
+
+        assertEquals(-10, reading.conductivityMicroSiemensPerCm)
+    }
+
+    @Test
     fun `too few registers are rejected`() {
         assertFailsWith<IllegalArgumentException> { SoilReadingDecoder.decode(IntArray(6)) }
     }

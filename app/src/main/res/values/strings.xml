@@ -69,7 +69,7 @@
     <string name="wire_signal_ground" translatable="false">GND</string>
     <string name="wire_signal_a" translatable="false">A+</string>
     <string name="wire_signal_b" translatable="false">B−</string>
-    <string name="wire_target_power">Power supply 5–24 V DC (+)</string>
+    <string name="wire_target_power">Power supply 5–30 V DC (+), e.g. 12 V</string>
     <string name="wire_target_ground">Power supply (−) and adapter GND</string>
     <string name="wire_target_a">Adapter terminal A+ / 485+</string>
     <string name="wire_target_b">Adapter terminal B− / 485−</string>

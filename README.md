@@ -8,7 +8,7 @@ USB-RS485 yang dicolokkan ke ponsel dengan OTG. Menampilkan 7 parameter sesuai l
 
 | Kabel sensor | Sambungkan ke |
 |---|---|
-| Cokelat (V+) | Catu daya **5–24 V DC (+)** (datasheet: 4,5–30 V) |
+| Cokelat (V+) | Catu daya **5–30 V DC (+)**, mis. 12 V (datasheet: 4,5–30 V) |
 | Hitam (GND) | Catu daya (−) **dan** GND adaptor (referensi bersama) |
 | Kuning (A+) | Terminal A+ / 485+ adaptor |
 | Biru (B−) | Terminal B− / 485− adaptor |

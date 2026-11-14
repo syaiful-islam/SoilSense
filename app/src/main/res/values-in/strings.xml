@@ -56,7 +56,7 @@
     <string name="wire_black">Hitam</string>
     <string name="wire_yellow">Kuning</string>
     <string name="wire_blue">Biru</string>
-    <string name="wire_target_power">Catu daya 5–24 V DC (+)</string>
+    <string name="wire_target_power">Catu daya 5–30 V DC (+), mis. 12 V</string>
     <string name="wire_target_ground">Catu daya (−) dan GND adaptor</string>
     <string name="wire_target_a">Terminal A+ / 485+ adaptor</string>
     <string name="wire_target_b">Terminal B− / 485− adaptor</string>

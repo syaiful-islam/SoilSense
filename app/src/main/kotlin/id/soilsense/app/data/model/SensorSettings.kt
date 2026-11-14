@@ -10,8 +10,8 @@ data class SensorSettings(
     val useWallpaperColors: Boolean = false,
 ) {
     companion object {
-        /** Standard Modbus unicast range; 0 is broadcast and 248–255 are reserved. */
-        val SLAVE_ID_RANGE: IntRange = 1..247
+        /** Range the probe accepts in register 0x07D0 (manual V1.4: 1–254). */
+        val SLAVE_ID_RANGE: IntRange = 1..254
         val POLL_INTERVAL_RANGE_SECONDS: IntRange = 1..60
 
         // pH needs up to 10 s to settle (datasheet), so sub-second polling adds bus load without information.

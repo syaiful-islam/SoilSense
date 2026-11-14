@@ -51,7 +51,7 @@ class SettingsViewModelTest {
     @Test
     fun `out of range slave id is ignored`() = runTest {
         viewModel.setSlaveId(0)
-        viewModel.setSlaveId(248)
+        viewModel.setSlaveId(255)
 
         assertEquals(1, settings.current.slaveId)
     }
