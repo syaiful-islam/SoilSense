@@ -144,8 +144,8 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (uiState.connection is ConnectionState.Connected) {
                 uiState.lastError?.let { ReadErrorBanner(it) }
@@ -260,7 +260,7 @@ private fun MetricGrid(reading: SoilReading?, modifier: Modifier = Modifier) {
     BoxWithConstraints(modifier) {
         val columns = if (maxWidth >= 600.dp) 4 else 2
         val rows = visibleMetrics(reading).chunked(columns)
-        val gap = 12.dp
+        val gap = 10.dp
         val fillHeight = if (constraints.hasBoundedHeight) (maxHeight - gap * (rows.size - 1)) / rows.size else 0.dp
         val tileHeight: Dp = maxOf(MIN_TILE_HEIGHT, fillHeight)
         Column(
@@ -280,7 +280,8 @@ private fun MetricGrid(reading: SoilReading?, modifier: Modifier = Modifier) {
     }
 }
 
-private val MIN_TILE_HEIGHT = 116.dp
+// Small enough that all 9 tiles (5 rows) fit on a typical 6.5" phone without scrolling.
+private val MIN_TILE_HEIGHT = 92.dp
 private val TileShape = RoundedCornerShape(22.dp)
 
 @Composable
@@ -295,7 +296,7 @@ private fun MetricTile(metric: SoilMetric, reading: SoilReading?, modifier: Modi
             .semantics(mergeDescendants = true) {},
     ) {
         Watermark(metric.icon, Modifier.align(Alignment.BottomEnd))
-        Column(Modifier.fillMaxSize().padding(14.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconChip(metric.icon)
                 Spacer(Modifier.width(10.dp))
@@ -313,10 +314,7 @@ private fun MetricTile(metric: SoilMetric, reading: SoilReading?, modifier: Modi
                     Spacer(Modifier.width(8.dp))
                     TileChip(stringResource(PhClass.of(reading.ph).label))
                 }
-                if (metric.derivedFromEc) {
-                    Spacer(Modifier.width(8.dp))
-                    TileChip(stringResource(R.string.metric_from_ec))
-                }
+
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -338,11 +336,21 @@ private fun MetricTile(metric: SoilMetric, reading: SoilReading?, modifier: Modi
                 if (value != null) {
                     metric.unit?.let {
                         Spacer(Modifier.width(6.dp))
-                        Text(
-                            stringResource(it),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.White.copy(alpha = 0.85f),
-                        )
+                        Column {
+                            Text(
+                                stringResource(it),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.White.copy(alpha = 0.85f),
+                            )
+                            // Salinity/TDS are computed by the probe from EC; say so where the value is.
+                            if (metric.derivedFromEc) {
+                                Text(
+                                    stringResource(R.string.metric_from_ec),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                )
+                            }
+                        }
                     }
                 }
             }
