@@ -10,8 +10,8 @@
     <string name="action_retry">Coba lagi</string>
     <string name="action_request_permission">Izinkan akses USB</string>
     <string name="action_save">Simpan</string>
-    <string name="action_detect">Deteksi ID</string>
-    <string name="action_use_detected_id">Pakai ID ini</string>
+    <string name="action_detect">Cari</string>
+    <string name="action_use_detected_id">Pakai</string>
     <string name="action_export_csv">Ekspor CSV</string>
     <string name="action_clear_history">Hapus riwayat</string>
     <string name="action_delete">Hapus</string>
@@ -99,20 +99,20 @@
     </plurals>
     <string name="history_export_failed">Ekspor gagal</string>
 
-    <string name="settings_section_communication">Komunikasi sensor</string>
+    <string name="settings_section_communication">Koneksi aplikasi</string>
     <string name="settings_slave_id">ID slave</string>
     <string name="settings_slave_id_hint">%1$d–%2$d · bawaan 1</string>
     <string name="settings_baud_rate">Baud rate</string>
-    <string name="settings_baud_rate_hint">Harus sama dengan sensor (bawaan 4800). Mengubahnya di sini tidak mengubah pengaturan sensor.</string>
+    <string name="settings_baud_rate_hint">Harus sama dengan probe (bawaan 4800). Ini hanya mengubah aplikasi; untuk mengubah probe, gunakan Konfigurasi di probe.</string>
     <string name="settings_poll_interval">Interval pembacaan</string>
     <string name="settings_poll_interval_value">Tiap %1$d detik</string>
     <string name="settings_section_appearance">Tampilan</string>
     <string name="settings_wallpaper_colors">Warna dari wallpaper</string>
     <string name="settings_wallpaper_colors_hint">Pakai warna Material You dari wallpaper (Android 12+) sebagai ganti palet biru aplikasi.</string>
-    <string name="settings_section_detect">Cari ID sensor</string>
-    <string name="settings_detect_body">Menanyakan ID slave ke probe lewat alamat 0xFF. Hanya boleh satu probe yang terhubung.</string>
+    <string name="settings_section_detect">Cari probe</string>
+    <string name="settings_detect_body">Menanyakan ID slave ke probe lewat alamat 0xFF, mencoba 2400, 4800 dan 9600 bps. Hanya boleh satu probe yang terhubung.</string>
     <string name="settings_detect_requires_connection">Hubungkan adaptor terlebih dahulu.</string>
-    <string name="settings_detect_found">ID slave terdeteksi: %1$d</string>
+    <string name="settings_detect_found">Ditemukan: ID %1$d · %2$d bps</string>
     <!-- Tab kalibrasi -->
     <string name="nav_calibration">Kalibrasi</string>
     <string name="calibration_saved">Tersimpan di sensor dan sudah dibaca ulang</string>
@@ -161,4 +161,24 @@
     <string name="calibration_error_invalid_number">Masukkan angka yang valid.</string>
     <string name="calibration_error_out_of_range">Hasilnya di luar rentang yang diterima sensor.</string>
     <string name="calibration_error_invalid_points">Kedua sampel harus jelas berbeda dan naik searah.</string>
+    <!-- Konfigurasi di probe -->
+    <string name="settings_section_probe">Konfigurasi di probe</string>
+    <string name="settings_probe_body">Mengubah ID slave dan baud rate yang tersimpan di dalam probe. Ubah satu per satu; aplikasi ikut memakai nilai baru.</string>
+    <string name="settings_probe_read">Baca dari probe</string>
+    <string name="settings_probe_stored">Tersimpan di probe</string>
+    <string name="settings_probe_unknown">Belum terbaca</string>
+    <string name="settings_probe_config">ID %1$d · %2$d bps</string>
+    <string name="settings_probe_config_unknown_baud">ID %1$d · baud tak dikenal</string>
+    <string name="settings_probe_verified">Tersimpan di probe dan sudah dicek.</string>
+    <string name="settings_probe_power_cycle">Sudah dikirim, tetapi probe belum menjawab dengan nilai baru. Cabut daya probe, pasang lagi, lalu tekan Baca. Bila tetap tidak menjawab, gunakan Cari probe.</string>
+    <string name="settings_probe_write_failed">Tidak berubah: %1$s</string>
+    <string name="settings_probe_read_failed">Probe tidak terbaca: %1$s. Periksa ID dan baud rate di Koneksi aplikasi, atau gunakan Cari probe.</string>
+    <string name="settings_probe_new_id">ID slave baru</string>
+    <string name="settings_probe_new_baud">Baud rate baru</string>
+    <string name="settings_probe_change">Ubah</string>
+    <string name="settings_probe_confirm_id_title">Ubah ID slave probe?</string>
+    <string name="settings_probe_confirm_id">ID %1$d → %2$d</string>
+    <string name="settings_probe_confirm_baud_title">Ubah baud rate probe?</string>
+    <string name="settings_probe_confirm_baud">%1$d → %2$d bps</string>
+    <string name="settings_probe_confirm_note">Disimpan di probe dan tetap ada walau listrik dimatikan. Aplikasi ikut memakai nilai baru. Bila probe tidak lagi menjawab, gunakan Cari probe.</string>
 </resources>

@@ -10,11 +10,13 @@ import id.soilsense.app.data.model.SensorSettings
 import id.soilsense.app.data.model.UsbAdapterInfo
 import id.soilsense.app.data.model.SensorReadError
 import id.soilsense.app.data.sensor.SensorResult
+import id.soilsense.app.data.sensor.ProbeChange
 import id.soilsense.app.data.sensor.SlaveIdDetection
 import id.soilsense.app.data.sensor.SoilSensorRepository
 import id.soilsense.app.data.settings.SettingsRepository
 import id.soilsense.modbus.soil.CalibrationSettings
 import id.soilsense.modbus.soil.CalibrationWrite
+import id.soilsense.modbus.soil.ProbeConfig
 import id.soilsense.modbus.soil.FactorParameter
 import id.soilsense.modbus.soil.NpkCalibration
 import id.soilsense.modbus.soil.Nutrient
@@ -48,7 +50,7 @@ val testReading = SoilReading(
 class FakeSoilSensorRepository : SoilSensorRepository {
     override val connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected(testAdapter))
     private val samples = MutableSharedFlow<SensorSample>()
-    var detectionResult: SlaveIdDetection = SlaveIdDetection.Found(1)
+    var detectionResult: SlaveIdDetection = SlaveIdDetection.Found(1, 4800)
     var connectCalls = 0
         private set
 
@@ -66,6 +68,26 @@ class FakeSoilSensorRepository : SoilSensorRepository {
     override fun liveReadings(): Flow<SensorSample> = samples
 
     override suspend fun detectSlaveId(): SlaveIdDetection = detectionResult
+
+    var probeConfig: ProbeConfig = ProbeConfig(slaveId = 1, baudRate = 4800)
+    var probeReadFailure: SensorReadError? = null
+
+    /** Null: the change succeeds and [probeConfig] is updated, like a real probe answering at once. */
+    var probeChangeResult: ProbeChange? = null
+    val probeChanges = mutableListOf<String>()
+
+    override suspend fun readProbeConfig(): SensorResult<ProbeConfig> =
+        probeReadFailure?.let { SensorResult.Failure(it) } ?: SensorResult.Success(probeConfig)
+
+    override suspend fun changeProbeSlaveId(newSlaveId: Int): ProbeChange {
+        probeChanges += "id=$newSlaveId"
+        return probeChangeResult ?: ProbeChange.Verified(probeConfig.copy(slaveId = newSlaveId).also { probeConfig = it })
+    }
+
+    override suspend fun changeProbeBaudRate(newBaudRate: Int): ProbeChange {
+        probeChanges += "baud=$newBaudRate"
+        return probeChangeResult ?: ProbeChange.Verified(probeConfig.copy(baudRate = newBaudRate).also { probeConfig = it })
+    }
 
     var nextReading: SensorSample = SensorSample.Success(testReading, timestampMillis = 0)
     var calibration: CalibrationSettings = factoryCalibration

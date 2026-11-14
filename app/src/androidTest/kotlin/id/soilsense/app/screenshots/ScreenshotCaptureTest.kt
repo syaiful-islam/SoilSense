@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -13,7 +12,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import id.soilsense.app.data.model.ConnectionState
@@ -32,9 +33,13 @@ import id.soilsense.app.ui.device.DeviceScreen
 import id.soilsense.app.ui.history.HistoryScreen
 import id.soilsense.app.ui.history.HistoryUiState
 import id.soilsense.app.ui.navigation.TopLevelDestination
+import id.soilsense.app.ui.settings.DetectionState
+import id.soilsense.app.ui.settings.ProbeConfigMessage
+import id.soilsense.app.ui.settings.ProbeConfigState
 import id.soilsense.app.ui.settings.SettingsScreen
 import id.soilsense.app.ui.settings.SettingsUiState
 import id.soilsense.app.ui.theme.SoilSenseTheme
+import id.soilsense.modbus.soil.ProbeConfig
 import id.soilsense.modbus.soil.SoilReading
 import org.junit.Rule
 import org.junit.Test
@@ -127,7 +132,46 @@ class ScreenshotCaptureTest {
     @Test
     fun settings() = capture("7_settings", TopLevelDestination.SETTINGS) {
         SettingsScreen(
-            uiState = SettingsUiState(settings = SensorSettings(), isConnected = true),
+            uiState = SettingsUiState(
+                settings = SensorSettings(),
+                isConnected = true,
+                probe = ProbeConfigState(config = ProbeConfig(1, 4800)),
+            ),
+            onSlaveIdChange = {},
+            onBaudRateChange = {},
+            onPollIntervalChange = {},
+            onWallpaperColorsChange = {},
+            onDetectSlaveId = {},
+            onApplyDetectedSlaveId = {},
+        )
+    }
+
+    @Test
+    fun settingsProbe() = capture("10_settings_probe", TopLevelDestination.SETTINGS, scrollToText = "Find probe") {
+        SettingsScreen(
+            uiState = SettingsUiState(
+                settings = SensorSettings(slaveId = 2),
+                isConnected = true,
+                detection = DetectionState.Found(slaveId = 2, baudRate = 4800),
+                probe = ProbeConfigState(config = ProbeConfig(2, 4800), message = ProbeConfigMessage.Verified),
+            ),
+            onSlaveIdChange = {},
+            onBaudRateChange = {},
+            onPollIntervalChange = {},
+            onWallpaperColorsChange = {},
+            onDetectSlaveId = {},
+            onApplyDetectedSlaveId = {},
+        )
+    }
+
+    @Test
+    fun settingsProbeDark() = capture("11_settings_probe_dark", TopLevelDestination.SETTINGS, dark = true, scrollToText = "Find probe") {
+        SettingsScreen(
+            uiState = SettingsUiState(
+                settings = SensorSettings(baudRate = 9600),
+                isConnected = true,
+                probe = ProbeConfigState(message = ProbeConfigMessage.NeedsPowerCycle),
+            ),
             onSlaveIdChange = {},
             onBaudRateChange = {},
             onPollIntervalChange = {},
@@ -172,6 +216,7 @@ class ScreenshotCaptureTest {
         name: String,
         selected: TopLevelDestination,
         dark: Boolean = false,
+        scrollToText: String? = null,
         screen: @Composable () -> Unit,
     ) {
         composeRule.runOnUiThread { composeRule.activity.enableEdgeToEdge() }
@@ -184,8 +229,7 @@ class ScreenshotCaptureTest {
                             item(
                                 selected = destination == selected,
                                 onClick = {},
-                                icon = { Icon(painterResource(destination.iconRes), contentDescription = null) },
-                                label = { Text(stringResource(destination.labelRes)) },
+                                icon = { Icon(painterResource(destination.iconRes), contentDescription = stringResource(destination.labelRes)) },
                             )
                         }
                     },
@@ -193,6 +237,10 @@ class ScreenshotCaptureTest {
             }
         }
         composeRule.waitForIdle()
+        scrollToText?.let {
+            composeRule.onNodeWithText(it).performScrollTo()
+            composeRule.waitForIdle()
+        }
         val bitmap = composeRule.onRoot().captureToImage().asAndroidBitmap()
         val dir = File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "screenshots")
         dir.mkdirs()

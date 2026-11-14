@@ -15,7 +15,9 @@ import id.soilsense.modbus.ModbusException
 import id.soilsense.modbus.ModbusRtuClient
 import id.soilsense.modbus.soil.CalibrationSettings
 import id.soilsense.modbus.soil.CalibrationWrite
+import id.soilsense.modbus.soil.ProbeConfig
 import id.soilsense.modbus.soil.SoilSensor
+import id.soilsense.modbus.soil.SoilSensorRegisters
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.currentCoroutineContext
@@ -56,6 +58,9 @@ class UsbSoilSensorRepository @Inject constructor(
     )
 
     private val sessionMutex = Mutex()
+
+    /** Keeps searches and probe reconfiguration from overlapping; both switch the port's baud rate. */
+    private val probeMutex = Mutex()
 
     @Volatile
     private var session: Session? = null
@@ -156,14 +161,98 @@ class UsbSoilSensorRepository @Inject constructor(
             .distinctUntilChanged()
             .flatMapLatest { config -> if (config.connected) poll(config) else emptyFlow() }
 
-    override suspend fun detectSlaveId(): SlaveIdDetection {
+    override suspend fun detectSlaveId(): SlaveIdDetection = probeMutex.withLock {
         val current = session ?: return SlaveIdDetection.Failed(SensorReadError.NotConnected)
-        return try {
-            SlaveIdDetection.Found(current.sensor.queryAddress())
-        } catch (e: ModbusException) {
-            SlaveIdDetection.Failed(e.toReadError())
+        val savedBaud = settingsRepository.settings.first().baudRate
+        val candidates = listOf(savedBaud) + (SoilSensorRegisters.SUPPORTED_BAUD_RATES - savedBaud)
+        var lastError: SensorReadError = SensorReadError.NoResponse
+        try {
+            for (baud in candidates) {
+                current.transport.configure(baud)
+                try {
+                    return SlaveIdDetection.Found(current.sensor.queryAddress(), baud)
+                } catch (e: ModbusException) {
+                    lastError = e.toReadError()
+                }
+            }
+            SlaveIdDetection.Failed(lastError)
         } catch (_: IOException) {
             SlaveIdDetection.Failed(onIoFailure(current))
+        } finally {
+            restoreBaud(current, savedBaud)
+        }
+    }
+
+    override suspend fun readProbeConfig(): SensorResult<ProbeConfig> =
+        withSensor { sensor, slaveId -> sensor.readProbeConfig(slaveId) }
+
+    override suspend fun changeProbeSlaveId(newSlaveId: Int): ProbeChange = probeMutex.withLock {
+        val current = session ?: return ProbeChange.Failed(SensorReadError.NotConnected)
+        val oldSlaveId = settingsRepository.settings.first().slaveId
+        try {
+            try {
+                current.sensor.writeSlaveId(oldSlaveId, newSlaveId)
+            } catch (e: ModbusException.ExceptionResponse) {
+                return ProbeChange.Failed(e.toReadError())
+            } catch (_: ModbusException) {
+                // Some firmwares reply from the new address or not at all; the checks below decide.
+            }
+            current.sensor.tryReadConfig(newSlaveId)?.takeIf { it.slaveId == newSlaveId }?.let {
+                settingsRepository.setSlaveId(newSlaveId)
+                return ProbeChange.Verified(it)
+            }
+            val atOld = current.sensor.tryReadConfig(oldSlaveId)
+            if (atOld != null && atOld.slaveId == oldSlaveId) return ProbeChange.Failed(SensorReadError.NoResponse)
+            settingsRepository.setSlaveId(newSlaveId)
+            ProbeChange.NeedsPowerCycle
+        } catch (_: IOException) {
+            ProbeChange.Failed(onIoFailure(current))
+        }
+    }
+
+    override suspend fun changeProbeBaudRate(newBaudRate: Int): ProbeChange = probeMutex.withLock {
+        val current = session ?: return ProbeChange.Failed(SensorReadError.NotConnected)
+        val settings = settingsRepository.settings.first()
+        val oldBaudRate = settings.baudRate
+        try {
+            try {
+                current.sensor.writeBaudRate(settings.slaveId, newBaudRate)
+            } catch (e: ModbusException.ExceptionResponse) {
+                return ProbeChange.Failed(e.toReadError())
+            } catch (_: ModbusException) {
+                // The echo may already come back at the new baud rate and look garbled; check below.
+            }
+            current.transport.configure(newBaudRate)
+            current.sensor.tryReadConfig(settings.slaveId)?.let {
+                settingsRepository.setBaudRate(newBaudRate)
+                _connectionState.value = ConnectionState.Connected(current.info, newBaudRate)
+                return ProbeChange.Verified(it)
+            }
+            current.transport.configure(oldBaudRate)
+            val atOld = current.sensor.tryReadConfig(settings.slaveId)
+            if (atOld != null && atOld.baudRate == oldBaudRate) return ProbeChange.Failed(SensorReadError.NoResponse)
+            // Stored (or unknown): follow the probe; the port switches via the settings observer.
+            settingsRepository.setBaudRate(newBaudRate)
+            ProbeChange.NeedsPowerCycle
+        } catch (_: IOException) {
+            ProbeChange.Failed(onIoFailure(current))
+        }
+    }
+
+    private suspend fun SoilSensor.tryReadConfig(slaveId: Int): ProbeConfig? =
+        try {
+            readProbeConfig(slaveId)
+        } catch (_: ModbusException) {
+            null
+        }
+
+    /** Puts the port back on [baudRate] after a search; a failure here surfaces on the next request. */
+    private suspend fun restoreBaud(current: Session, baudRate: Int) {
+        if (session !== current) return
+        try {
+            current.transport.configure(baudRate)
+        } catch (_: IOException) {
+            // The adapter is gone; the USB detach handler reports it.
         }
     }
 

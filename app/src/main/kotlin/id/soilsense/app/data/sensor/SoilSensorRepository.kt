@@ -5,6 +5,7 @@ import id.soilsense.app.data.model.SensorReadError
 import id.soilsense.app.data.model.SensorSample
 import id.soilsense.modbus.soil.CalibrationSettings
 import id.soilsense.modbus.soil.CalibrationWrite
+import id.soilsense.modbus.soil.ProbeConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -25,8 +26,24 @@ interface SoilSensorRepository {
      */
     fun liveReadings(): Flow<SensorSample>
 
-    /** Reads the probe's slave ID through the 0xFF query address. Only one probe may be on the bus. */
+    /**
+     * Finds the probe's slave ID and baud rate: asks through the 0xFF query address at the saved
+     * baud rate first, then at the other supported ones. Only one probe may be on the bus. The port
+     * is left at the saved baud rate; applying the result is up to the caller.
+     */
     suspend fun detectSlaveId(): SlaveIdDetection
+
+    /** Reads the slave ID and baud rate stored inside the probe. */
+    suspend fun readProbeConfig(): SensorResult<ProbeConfig>
+
+    /**
+     * Stores a new slave ID in the probe, then checks which address it answers on. The app's own
+     * slave ID follows the probe whenever the write may have taken effect.
+     */
+    suspend fun changeProbeSlaveId(newSlaveId: Int): ProbeChange
+
+    /** Like [changeProbeSlaveId], for the baud rate (2400, 4800 or 9600). */
+    suspend fun changeProbeBaudRate(newBaudRate: Int): ProbeChange
 
     /** One reading right now, independent of [liveReadings]; used as a calibration sample. */
     suspend fun readNow(): SensorSample
@@ -49,7 +66,22 @@ sealed interface SensorResult<out T> {
 }
 
 sealed interface SlaveIdDetection {
-    data class Found(val slaveId: Int) : SlaveIdDetection
+    data class Found(val slaveId: Int, val baudRate: Int) : SlaveIdDetection
 
     data class Failed(val error: SensorReadError) : SlaveIdDetection
+}
+
+/** Outcome of changing the probe's slave ID or baud rate. */
+sealed interface ProbeChange {
+    /** The probe answered with the new value; the app now uses it too. */
+    data class Verified(val config: ProbeConfig) : ProbeChange
+
+    /**
+     * The value was sent and the app switched to it, but the probe does not answer with it yet.
+     * Typically the probe applies it only after its power is cycled.
+     */
+    data object NeedsPowerCycle : ProbeChange
+
+    /** Nothing changed: the probe rejected the write or still answers with the old value. */
+    data class Failed(val error: SensorReadError) : ProbeChange
 }

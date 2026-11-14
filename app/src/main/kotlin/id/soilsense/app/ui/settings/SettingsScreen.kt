@@ -2,6 +2,7 @@ package id.soilsense.app.ui.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -18,9 +19,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -43,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -60,6 +66,7 @@ import id.soilsense.app.data.model.SensorReadError
 import id.soilsense.app.data.model.SensorSettings
 import id.soilsense.app.ui.common.toText
 import id.soilsense.app.ui.theme.SoilSenseTheme
+import id.soilsense.modbus.soil.ProbeConfig
 import id.soilsense.modbus.soil.SoilSensorRegisters
 import kotlin.math.roundToInt
 
@@ -74,8 +81,24 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
         onWallpaperColorsChange = viewModel::setUseWallpaperColors,
         onDetectSlaveId = viewModel::detectSlaveId,
         onApplyDetectedSlaveId = viewModel::applyDetectedSlaveId,
+        probeActions = ProbeConfigActions(
+            onRefresh = viewModel::refreshProbeConfig,
+            onProposeSlaveId = viewModel::proposeProbeSlaveId,
+            onProposeBaudRate = viewModel::proposeProbeBaudRate,
+            onConfirm = viewModel::confirmProbeChange,
+            onDismiss = viewModel::dismissProbeChange,
+        ),
     )
 }
+
+/** Callbacks of the "Configuration in the probe" card. */
+data class ProbeConfigActions(
+    val onRefresh: () -> Unit = {},
+    val onProposeSlaveId: (Int) -> Unit = {},
+    val onProposeBaudRate: (Int) -> Unit = {},
+    val onConfirm: () -> Unit = {},
+    val onDismiss: () -> Unit = {},
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,6 +111,7 @@ fun SettingsScreen(
     onDetectSlaveId: () -> Unit,
     onApplyDetectedSlaveId: () -> Unit,
     modifier: Modifier = Modifier,
+    probeActions: ProbeConfigActions = ProbeConfigActions(),
 ) {
     Scaffold(
         modifier = modifier,
@@ -112,6 +136,7 @@ fun SettingsScreen(
                 BaudRateSelector(selected = settings.baudRate, onSelect = onBaudRateChange)
                 PollIntervalSlider(seconds = settings.pollIntervalSeconds, onChange = onPollIntervalChange)
             }
+            ProbeConfigCard(isConnected = uiState.isConnected, state = uiState.probe, actions = probeActions)
             SettingsCard(R.string.settings_section_detect) {
                 DetectSlaveId(
                     isConnected = uiState.isConnected,
@@ -125,6 +150,8 @@ fun SettingsScreen(
             }
         }
     }
+
+    uiState.probe.proposal?.let { ProbeChangeDialog(it, uiState.probe.isWriting, probeActions.onConfirm, probeActions.onDismiss) }
 }
 
 @Composable
@@ -151,27 +178,206 @@ private fun WallpaperColorsSwitch(checked: Boolean, onCheckedChange: (Boolean) -
 
 /** A titled, rounded group of related settings. */
 @Composable
-private fun SettingsCard(@StringRes titleRes: Int, content: @Composable ColumnScope.() -> Unit) {
+private fun SettingsCard(
+    @StringRes titleRes: Int,
+    trailing: @Composable () -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            SectionTitle(titleRes)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SectionTitle(titleRes, Modifier.weight(1f))
+                trailing()
+            }
             content()
         }
     }
 }
 
 @Composable
-private fun SectionTitle(@StringRes titleRes: Int) {
+private fun SectionTitle(@StringRes titleRes: Int, modifier: Modifier = Modifier) {
     Text(
         stringResource(titleRes),
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.semantics { heading() },
+        modifier = modifier.semantics { heading() },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProbeConfigCard(isConnected: Boolean, state: ProbeConfigState, actions: ProbeConfigActions) {
+    val config = state.config
+    val busy = state.isLoading || state.isWriting
+    SettingsCard(
+        R.string.settings_section_probe,
+        trailing = {
+            if (busy) {
+                Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                }
+            } else if (isConnected) {
+                IconButton(onClick = actions.onRefresh) {
+                    Icon(painterResource(R.drawable.ic_refresh), contentDescription = stringResource(R.string.settings_probe_read))
+                }
+            }
+        },
+    ) {
+        Text(
+            stringResource(R.string.settings_probe_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (!isConnected) {
+            Text(stringResource(R.string.settings_detect_requires_connection), style = MaterialTheme.typography.bodyMedium)
+            return@SettingsCard
+        }
+        StoredInProbe(config)
+        state.message?.let { ProbeMessage(it) }
+        if (config == null) return@SettingsCard
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        NewSlaveIdRow(current = config.slaveId, enabled = !busy, onPropose = actions.onProposeSlaveId)
+        NewBaudRateRow(current = config.baudRate, enabled = !busy, onPropose = actions.onProposeBaudRate)
+    }
+}
+
+@Composable
+private fun StoredInProbe(config: ProbeConfig?) {
+    Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.settings_probe_stored), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(
+            if (config == null) stringResource(R.string.settings_probe_unknown) else probeConfigLabel(config),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun probeConfigLabel(config: ProbeConfig): String =
+    config.baudRate?.let { stringResource(R.string.settings_probe_config, config.slaveId, it) }
+        ?: stringResource(R.string.settings_probe_config_unknown_baud, config.slaveId)
+
+@Composable
+private fun ProbeMessage(message: ProbeConfigMessage) {
+    val (icon, color, text) = when (message) {
+        ProbeConfigMessage.Verified ->
+            Triple(R.drawable.ic_check_circle, MaterialTheme.colorScheme.primary, stringResource(R.string.settings_probe_verified))
+        ProbeConfigMessage.NeedsPowerCycle ->
+            Triple(R.drawable.ic_warning, MaterialTheme.colorScheme.tertiary, stringResource(R.string.settings_probe_power_cycle))
+        is ProbeConfigMessage.WriteFailed ->
+            Triple(R.drawable.ic_warning, MaterialTheme.colorScheme.error, stringResource(R.string.settings_probe_write_failed, errorText(message.error)))
+        is ProbeConfigMessage.ReadFailed ->
+            Triple(R.drawable.ic_warning, MaterialTheme.colorScheme.error, stringResource(R.string.settings_probe_read_failed, errorText(message.error)))
+    }
+    Row(verticalAlignment = Alignment.Top) {
+        Icon(painterResource(icon), contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = color)
+    }
+}
+
+@Composable
+private fun errorText(error: SensorReadError): String {
+    val text = error.toText()
+    return if (text.code != null) stringResource(text.title, text.code) else stringResource(text.title)
+}
+
+@Composable
+private fun NewSlaveIdRow(current: Int, enabled: Boolean, onPropose: (Int) -> Unit) {
+    var text by rememberSaveable(current) { mutableStateOf("") }
+    val newId = text.toIntOrNull()?.takeIf { it in SensorSettings.SLAVE_ID_RANGE && it != current }
+    val focusManager = LocalFocusManager.current
+    val propose = {
+        newId?.let {
+            focusManager.clearFocus()
+            onPropose(it)
+        }
+        Unit
+    }
+    Row(verticalAlignment = Alignment.Top) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = { input -> text = input.filter(Char::isDigit).take(3) },
+            label = { Text(stringResource(R.string.settings_probe_new_id)) },
+            supportingText = {
+                Text(stringResource(R.string.settings_slave_id_hint, SensorSettings.SLAVE_ID_RANGE.first, SensorSettings.SLAVE_ID_RANGE.last))
+            },
+            isError = text.isNotEmpty() && newId == null,
+            singleLine = true,
+            enabled = enabled,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { propose() }),
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(12.dp))
+        Button(onClick = propose, enabled = enabled && newId != null, modifier = Modifier.padding(top = 8.dp)) {
+            Text(stringResource(R.string.settings_probe_change))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NewBaudRateRow(current: Int?, enabled: Boolean, onPropose: (Int) -> Unit) {
+    val options = SoilSensorRegisters.SUPPORTED_BAUD_RATES
+    var selected by rememberSaveable(current) { mutableStateOf(current) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.settings_probe_new_baud), style = MaterialTheme.typography.bodyLarge)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
+                options.forEachIndexed { index, baud ->
+                    SegmentedButton(
+                        selected = baud == selected,
+                        onClick = { selected = baud },
+                        enabled = enabled,
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                        icon = {},
+                    ) { Text(baud.toString()) }
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Button(
+                onClick = { selected?.let(onPropose) },
+                enabled = enabled && selected != null && selected != current,
+            ) { Text(stringResource(R.string.settings_probe_change)) }
+        }
+    }
+}
+
+@Composable
+private fun ProbeChangeDialog(proposal: ProbeConfigProposal, isWriting: Boolean, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val (title, change) = when (proposal) {
+        is ProbeConfigProposal.SlaveId ->
+            R.string.settings_probe_confirm_id_title to stringResource(R.string.settings_probe_confirm_id, proposal.from, proposal.to)
+        is ProbeConfigProposal.BaudRate ->
+            R.string.settings_probe_confirm_baud_title to stringResource(R.string.settings_probe_confirm_baud, proposal.from, proposal.to)
+    }
+    AlertDialog(
+        onDismissRequest = { if (!isWriting) onDismiss() },
+        title = { Text(stringResource(title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(change, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.settings_probe_confirm_note), style = MaterialTheme.typography.bodyMedium)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = !isWriting) {
+                if (isWriting) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text(stringResource(R.string.calibration_write))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !isWriting) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -292,7 +498,7 @@ private fun DetectSlaveId(
         when (detection) {
             is DetectionState.Found -> Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    stringResource(R.string.settings_detect_found, detection.slaveId),
+                    stringResource(R.string.settings_detect_found, detection.slaveId, detection.baudRate),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f),
                 )

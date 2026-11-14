@@ -1,7 +1,6 @@
 package id.soilsense.app.ui
 
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,8 +43,8 @@ fun SoilSenseApp(navController: NavHostController = rememberNavController()) {
                 item(
                     selected = currentDestination.isInHierarchy(destination.route::class),
                     onClick = { navController.navigateToTopLevel(destination) },
-                    icon = { Icon(painterResource(destination.iconRes), contentDescription = null) },
-                    label = { Text(stringResource(destination.labelRes)) },
+                    // Icons only (user preference); the label is still announced by TalkBack.
+                    icon = { Icon(painterResource(destination.iconRes), contentDescription = stringResource(destination.labelRes)) },
                 )
             }
         },

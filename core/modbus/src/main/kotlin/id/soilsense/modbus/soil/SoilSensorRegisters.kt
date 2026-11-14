@@ -33,6 +33,7 @@ public object SoilSensorRegisters {
     public const val BROADCAST_QUERY_ADDRESS: Int = 0xFF
 
     public const val DEFAULT_SLAVE_ID: Int = 1
+    public val SLAVE_ID_RANGE: IntRange = 1..254
     public const val DEFAULT_BAUD_RATE: Int = 4800
     public val SUPPORTED_BAUD_RATES: List<Int> = listOf(2400, 4800, 9600)
 }

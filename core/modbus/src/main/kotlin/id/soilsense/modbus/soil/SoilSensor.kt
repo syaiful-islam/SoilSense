@@ -45,6 +45,27 @@ public class SoilSensor(private val client: ModbusRtuClient) {
             quantity = 1,
         ).first()
 
+    /** Reads the slave ID and baud rate stored in the probe, one register at a time like the vendor tool. */
+    public suspend fun readProbeConfig(slaveId: Int): ProbeConfig = ProbeConfig(
+        slaveId = readWord(slaveId, SoilSensorRegisters.SLAVE_ID),
+        baudRate = ProbeBaudRate.fromCode(readWord(slaveId, SoilSensorRegisters.BAUD_RATE)),
+    )
+
+    /**
+     * Stores [newSlaveId] in the probe (manual: "Set slave ID"). From then on the probe answers
+     * only to the new address, possibly only after a power cycle.
+     */
+    public suspend fun writeSlaveId(slaveId: Int, newSlaveId: Int) {
+        require(newSlaveId in SoilSensorRegisters.SLAVE_ID_RANGE) { "Slave ID $newSlaveId outside ${SoilSensorRegisters.SLAVE_ID_RANGE}" }
+        client.writeSingleRegister(slaveId, SoilSensorRegisters.SLAVE_ID, newSlaveId)
+    }
+
+    /** Stores [baudRate] in the probe (manual: "Set baud rate"); 2400, 4800 or 9600 only. */
+    public suspend fun writeBaudRate(slaveId: Int, baudRate: Int) {
+        val code = requireNotNull(ProbeBaudRate.code(baudRate)) { "Unsupported baud rate $baudRate" }
+        client.writeSingleRegister(slaveId, SoilSensorRegisters.BAUD_RATE, code)
+    }
+
     /**
      * Reads every calibration register. Registers are read one item at a time, the way the
      * vendor's Config Tool does, rather than in blocks that span gaps in the register map.
