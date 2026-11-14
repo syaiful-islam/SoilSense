@@ -15,6 +15,9 @@ data object HistoryDestination
 data object DeviceDestination
 
 @Serializable
+data object CalibrationDestination
+
+@Serializable
 data object SettingsDestination
 
 enum class TopLevelDestination(
@@ -24,6 +27,7 @@ enum class TopLevelDestination(
 ) {
     DASHBOARD(DashboardDestination, R.string.nav_dashboard, R.drawable.ic_dashboard),
     DEVICE(DeviceDestination, R.string.nav_device, R.drawable.ic_usb),
+    CALIBRATION(CalibrationDestination, R.string.nav_calibration, R.drawable.ic_tune),
     HISTORY(HistoryDestination, R.string.nav_history, R.drawable.ic_history),
     SETTINGS(SettingsDestination, R.string.nav_settings, R.drawable.ic_settings),
 }

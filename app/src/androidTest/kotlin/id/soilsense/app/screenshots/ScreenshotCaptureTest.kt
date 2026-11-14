@@ -21,6 +21,11 @@ import id.soilsense.app.data.model.RecordedReading
 import id.soilsense.app.data.model.SensorReadError
 import id.soilsense.app.data.model.SensorSettings
 import id.soilsense.app.data.model.UsbAdapterInfo
+import id.soilsense.app.ui.calibration.CalibrationActions
+import id.soilsense.app.ui.calibration.CalibrationScreen
+import id.soilsense.app.ui.calibration.CalibrationTarget
+import id.soilsense.app.ui.calibration.CalibrationUiState
+import id.soilsense.app.ui.calibration.calibrationPreviewSettings
 import id.soilsense.app.ui.dashboard.DashboardScreen
 import id.soilsense.app.ui.dashboard.DashboardUiState
 import id.soilsense.app.ui.device.DeviceScreen
@@ -129,6 +134,37 @@ class ScreenshotCaptureTest {
             onWallpaperColorsChange = {},
             onDetectSlaveId = {},
             onApplyDetectedSlaveId = {},
+        )
+    }
+
+    @Test
+    fun calibrationNpk() = capture("8_calibration_npk", TopLevelDestination.CALIBRATION) {
+        CalibrationScreen(
+            uiState = CalibrationUiState(
+                isConnected = true,
+                calibration = calibrationPreviewSettings,
+                target = CalibrationTarget.NITROGEN,
+                twoPoint = true,
+                samples = listOf(reading.copy(nitrogenMgPerKg = 40), reading.copy(nitrogenMgPerKg = 140)),
+                references = listOf("50", "200"),
+            ),
+            snackbarHostState = SnackbarHostState(),
+            actions = CalibrationActions(),
+        )
+    }
+
+    @Test
+    fun calibrationPhDark() = capture("9_calibration_ph_dark", TopLevelDestination.CALIBRATION, dark = true) {
+        CalibrationScreen(
+            uiState = CalibrationUiState(
+                isConnected = true,
+                calibration = calibrationPreviewSettings,
+                target = CalibrationTarget.PH,
+                samples = listOf(reading, null),
+                references = listOf("7,5", ""),
+            ),
+            snackbarHostState = SnackbarHostState(),
+            actions = CalibrationActions(),
         )
     }
 

@@ -8,9 +8,17 @@ import id.soilsense.app.data.model.RecordedReading
 import id.soilsense.app.data.model.SensorSample
 import id.soilsense.app.data.model.SensorSettings
 import id.soilsense.app.data.model.UsbAdapterInfo
+import id.soilsense.app.data.model.SensorReadError
+import id.soilsense.app.data.sensor.SensorResult
 import id.soilsense.app.data.sensor.SlaveIdDetection
 import id.soilsense.app.data.sensor.SoilSensorRepository
 import id.soilsense.app.data.settings.SettingsRepository
+import id.soilsense.modbus.soil.CalibrationSettings
+import id.soilsense.modbus.soil.CalibrationWrite
+import id.soilsense.modbus.soil.FactorParameter
+import id.soilsense.modbus.soil.NpkCalibration
+import id.soilsense.modbus.soil.Nutrient
+import id.soilsense.modbus.soil.OffsetParameter
 import id.soilsense.modbus.soil.SoilReading
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -18,6 +26,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+
+val factoryCalibration = CalibrationSettings(
+    offsets = OffsetParameter.entries.associateWith { 0 },
+    factors = FactorParameter.entries.associateWith { it.defaultRaw },
+    npk = Nutrient.entries.associateWith { NpkCalibration.DEFAULT },
+)
 
 val testAdapter = UsbAdapterInfo(chipName = "CH34x", vendorId = 0x1A86, productId = 0x7523)
 
@@ -52,6 +66,29 @@ class FakeSoilSensorRepository : SoilSensorRepository {
     override fun liveReadings(): Flow<SensorSample> = samples
 
     override suspend fun detectSlaveId(): SlaveIdDetection = detectionResult
+
+    var nextReading: SensorSample = SensorSample.Success(testReading, timestampMillis = 0)
+    var calibration: CalibrationSettings = factoryCalibration
+    var failure: SensorReadError? = null
+    val appliedWrites = mutableListOf<CalibrationWrite>()
+
+    override suspend fun readNow(): SensorSample = nextReading
+
+    override suspend fun readCalibration(): SensorResult<CalibrationSettings> =
+        failure?.let { SensorResult.Failure(it) } ?: SensorResult.Success(calibration)
+
+    override suspend fun applyCalibration(change: CalibrationWrite): SensorResult<CalibrationSettings> {
+        failure?.let { return SensorResult.Failure(it) }
+        appliedWrites += change
+        calibration = when (change) {
+            is CalibrationWrite.Offset -> calibration.copy(offsets = calibration.offsets + (change.parameter to change.raw))
+            is CalibrationWrite.Factor -> calibration.copy(factors = calibration.factors + (change.parameter to change.raw))
+            is CalibrationWrite.Npk -> calibration.copy(npk = calibration.npk + (change.nutrient to change.calibration))
+            CalibrationWrite.ResetNpk -> calibration.copy(npk = factoryCalibration.npk)
+            CalibrationWrite.RestoreDefaults -> factoryCalibration
+        }
+        return SensorResult.Success(calibration)
+    }
 }
 
 class FakeSettingsRepository(initial: SensorSettings = SensorSettings()) : SettingsRepository {

@@ -13,6 +13,8 @@ import id.soilsense.app.data.usb.UsbSerialPortTransport
 import id.soilsense.app.di.ApplicationScope
 import id.soilsense.modbus.ModbusException
 import id.soilsense.modbus.ModbusRtuClient
+import id.soilsense.modbus.soil.CalibrationSettings
+import id.soilsense.modbus.soil.CalibrationWrite
 import id.soilsense.modbus.soil.SoilSensor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -162,6 +164,27 @@ class UsbSoilSensorRepository @Inject constructor(
             SlaveIdDetection.Failed(e.toReadError())
         } catch (_: IOException) {
             SlaveIdDetection.Failed(onIoFailure(current))
+        }
+    }
+
+    override suspend fun readNow(): SensorSample = readOnce(settingsRepository.settings.first().slaveId)
+
+    override suspend fun readCalibration(): SensorResult<CalibrationSettings> =
+        withSensor { sensor, slaveId -> sensor.readCalibration(slaveId) }
+
+    override suspend fun applyCalibration(change: CalibrationWrite): SensorResult<CalibrationSettings> =
+        withSensor { sensor, slaveId -> sensor.apply(slaveId, change) }
+
+    /** Runs one request against the open probe, mapping protocol and USB failures like polling does. */
+    private suspend fun <T> withSensor(block: suspend (SoilSensor, Int) -> T): SensorResult<T> {
+        val current = session ?: return SensorResult.Failure(SensorReadError.NotConnected)
+        val slaveId = settingsRepository.settings.first().slaveId
+        return try {
+            SensorResult.Success(block(current.sensor, slaveId))
+        } catch (e: ModbusException) {
+            SensorResult.Failure(e.toReadError())
+        } catch (_: IOException) {
+            SensorResult.Failure(onIoFailure(current))
         }
     }
 

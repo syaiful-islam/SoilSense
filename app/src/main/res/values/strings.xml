@@ -142,4 +142,59 @@
     <string name="settings_detect_body">Asks the probe for its slave ID using address 0xFF. Only one probe may be connected.</string>
     <string name="settings_detect_requires_connection">Connect the adapter first.</string>
     <string name="settings_detect_found">Detected slave ID: %1$d</string>
+    <!-- Calibration tab -->
+    <string name="nav_calibration">Calibrate</string>
+    <string name="calibration_saved">Saved to the sensor and read back</string>
+    <string name="calibration_not_connected_title">Sensor not connected</string>
+    <string name="calibration_not_connected_body">Calibration reads and writes settings stored inside the probe, so the adapter and probe must be connected.</string>
+    <string name="calibration_calibrate_title">Calibrate a parameter</string>
+    <string name="calibration_calibrate_body">Read the sensor in a sample with a known value (lab result or a trusted meter), enter that value, then review the change before it is written.</string>
+    <string name="calibration_one_point">1 point</string>
+    <string name="calibration_two_point">2 points</string>
+    <string name="calibration_one_point_hint">Shifts the offset so the current reading matches the lab value. Best for small corrections.</string>
+    <string name="calibration_two_point_hint">Uses two samples with clearly different lab values to set both the factor and the offset.</string>
+    <string name="calibration_ph_hint">The pH offset step (0.1 pH) is not stated in the manual. After saving, check the reading in a buffer solution.</string>
+    <string name="calibration_sample_n">Sample %1$d</string>
+    <string name="calibration_read_sensor">Read sensor</string>
+    <string name="calibration_no_sample">No reading yet</string>
+    <string name="calibration_sensor_shows">Sensor: %1$s</string>
+    <string name="calibration_reference_label">Reference value</string>
+    <string name="calibration_reference_hint">Lab result or trusted meter for the same sample</string>
+    <string name="calibration_current_value">Current: %1$s</string>
+    <string name="calibration_new_value_label">New value</string>
+    <string name="calibration_review">Review change</string>
+    <string name="calibration_stored_title">Stored in the sensor</string>
+    <string name="calibration_refresh">Read again</string>
+    <string name="calibration_not_loaded">Not read yet.</string>
+    <string name="calibration_reset_npk_title">Reset NPK</string>
+    <string name="calibration_reset_npk_body">Use this when N, P or K stay fixed at one value. It resumes NPK measuring and sets their factor to 1 and offset to 0.</string>
+    <string name="calibration_reset_npk_action">Reset NPK</string>
+    <string name="calibration_reset_npk_confirm">Resume N/P/K measuring and clear their calibration (factor 1.000, offset 0)?</string>
+    <string name="calibration_defaults_title">Restore defaults</string>
+    <string name="calibration_defaults_body">Clears every offset and NPK calibration and restores the factory factors (EC coefficient 0, salinity 0.55, TDS 0.50). Slave ID and baud rate are not changed.</string>
+    <string name="calibration_defaults_action">Restore defaults</string>
+    <string name="calibration_defaults_confirm">Overwrite all calibration values in the sensor with the factory defaults?</string>
+    <string name="calibration_confirm_title">Write to the sensor?</string>
+    <string name="calibration_before">Now: %1$s</string>
+    <string name="calibration_after">New: %1$s</string>
+    <string name="calibration_permanent_note">The value is stored in the probe and kept after power off. You can undo it with Restore defaults.</string>
+    <string name="calibration_write">Write</string>
+    <string name="calibration_ec_temp_coefficient">EC temp. coefficient</string>
+    <string name="calibration_salinity_factor">Salinity factor</string>
+    <string name="calibration_tds_factor">TDS factor</string>
+    <string name="calibration_range_ec_coefficient" formatted="false">0.0 – 10.0 %/°C (default 0)</string>
+    <string name="calibration_range_salinity">0.00 – 1.00 (default 0.55)</string>
+    <string name="calibration_range_tds">0.00 – 1.00 (default 0.50)</string>
+    <string name="calibration_error_not_loaded">Read the stored calibration first.</string>
+    <string name="calibration_error_need_sample">Tap Read sensor and enter the reference value.</string>
+    <string name="calibration_error_invalid_number">Enter a valid number.</string>
+    <string name="calibration_error_out_of_range">The result is outside the range the sensor accepts.</string>
+    <string name="calibration_error_invalid_points">The two samples must differ clearly and rise in the same direction.</string>
+    <string name="calibration_offset_celsius" translatable="false">offset %1$+.1f °C</string>
+    <string name="calibration_offset_percent" translatable="false">offset %1$+.1f %%</string>
+    <string name="calibration_offset_us_cm" translatable="false">offset %1$+d µS/cm</string>
+    <string name="calibration_offset_ph" translatable="false">offset %1$+.1f pH</string>
+    <string name="calibration_factor_percent_per_c" translatable="false">%1$.1f %%/°C</string>
+    <string name="calibration_factor_plain" translatable="false">%1$.2f</string>
+    <string name="calibration_npk_value" translatable="false">×%1$.3f, %2$+d mg/kg</string>
 </resources>
