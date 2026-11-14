@@ -10,7 +10,7 @@ import id.soilsense.app.R
 import id.soilsense.modbus.soil.SoilReading
 
 /**
- * The 7 parameters printed on the probe's label, in display order, with the colour that identifies
+ * The 7 parameters printed on the probe's label plus salinity and TDS, in display order, with the colour that identifies
  * each one on every screen (tiles on Home, chips in History).
  *
  * Both gradient stops keep white text at WCAG AA contrast (≥ 4.5:1), so text may sit anywhere on a tile.
@@ -22,6 +22,8 @@ enum class SoilMetric(
     val light: Color,
     val dark: Color,
     val icon: MetricIcon,
+    /** Salinity and TDS are computed by the probe from EC (× its factors), not measured separately. */
+    val derivedFromEc: Boolean = false,
 ) {
     TEMPERATURE(
         R.string.metric_temperature,
@@ -79,12 +81,30 @@ enum class SoilMetric(
         Color(0xFF006064),
         MetricIcon.Element(R.string.symbol_potassium),
     ),
+    SALINITY(
+        R.string.metric_salinity,
+        R.string.metric_short_salinity,
+        R.string.unit_mg_l,
+        Color(0xFF795548), // 6.5:1
+        Color(0xFF4E342E),
+        MetricIcon.Drawable(R.drawable.ic_grain),
+        derivedFromEc = true,
+    ),
+    TDS(
+        R.string.metric_tds,
+        R.string.metric_tds,
+        R.string.unit_mg_l,
+        Color(0xFF546E7A), // 5.4:1
+        Color(0xFF37474F),
+        MetricIcon.Drawable(R.drawable.ic_opacity),
+        derivedFromEc = true,
+    ),
     ;
 
     val gradient: Brush get() = Brush.linearGradient(listOf(light, dark))
 
-    /** Double values are shown with one decimal, Int values as is. */
-    fun valueOf(reading: SoilReading): Number = when (this) {
+    /** Double values are shown with one decimal, Int values as is; null when the probe does not report it. */
+    fun valueOf(reading: SoilReading): Number? = when (this) {
         TEMPERATURE -> reading.temperatureCelsius
         MOISTURE -> reading.moisturePercent
         CONDUCTIVITY -> reading.conductivityMicroSiemensPerCm
@@ -92,6 +112,8 @@ enum class SoilMetric(
         NITROGEN -> reading.nitrogenMgPerKg
         PHOSPHORUS -> reading.phosphorusMgPerKg
         POTASSIUM -> reading.potassiumMgPerKg
+        SALINITY -> reading.salinityMgPerL
+        TDS -> reading.tdsMgPerL
     }
 }
 
@@ -127,3 +149,10 @@ enum class PhClass(@param:StringRes val label: Int) {
 /** Brand gradient of the Home header (blue → teal); white text ≥ 4.5:1 on both stops. */
 val HeaderGradient: Brush = Brush.linearGradient(listOf(Color(0xFF1565C0), Color(0xFF00796B)))
 val HeaderBlue: Color = Color(0xFF1565C0)
+
+/**
+ * Tiles to show: all 9 until the first reading arrives, then only what the probe reports (firmware
+ * without salinity/TDS registers gives the 7 measured parameters only).
+ */
+fun visibleMetrics(reading: SoilReading?): List<SoilMetric> =
+    if (reading == null) SoilMetric.entries else SoilMetric.entries.filter { it.valueOf(reading) != null }

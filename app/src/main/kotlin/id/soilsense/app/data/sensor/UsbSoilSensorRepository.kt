@@ -168,6 +168,7 @@ class UsbSoilSensorRepository @Inject constructor(
     private data class PollingConfig(val connected: Boolean, val slaveId: Int, val intervalMillis: Long)
 
     private fun poll(config: PollingConfig): Flow<SensorSample> = flow {
+        session?.sensor?.reset() // the slave ID may now point at a probe with different firmware
         while (currentCoroutineContext().isActive) {
             val startedAt = clock.nowMillis()
             val sample = readOnce(config.slaveId)

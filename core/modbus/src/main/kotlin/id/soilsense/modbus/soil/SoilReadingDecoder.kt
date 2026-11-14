@@ -3,10 +3,12 @@ package id.soilsense.modbus.soil
 /** Converts raw holding registers (starting at 0x0000) into engineering units. */
 public object SoilReadingDecoder {
 
+    /** Accepts 7 registers (no salinity/TDS) or 9 and more. */
     public fun decode(registers: IntArray): SoilReading {
         require(registers.size >= SoilSensorRegisters.MEASUREMENT_COUNT) {
-            "Need ${SoilSensorRegisters.MEASUREMENT_COUNT} registers, got ${registers.size}"
+            "Need at least ${SoilSensorRegisters.MEASUREMENT_COUNT} registers, got ${registers.size}"
         }
+        val extended = registers.size >= SoilSensorRegisters.EXTENDED_COUNT
         return SoilReading(
             moisturePercent = registers[SoilSensorRegisters.MOISTURE] / 10.0,
             // The probe is rated down to -40 °C, so temperature is two's complement.
@@ -16,6 +18,8 @@ public object SoilReadingDecoder {
             nitrogenMgPerKg = registers[SoilSensorRegisters.NITROGEN],
             phosphorusMgPerKg = registers[SoilSensorRegisters.PHOSPHORUS],
             potassiumMgPerKg = registers[SoilSensorRegisters.POTASSIUM],
+            salinityMgPerL = if (extended) registers[SoilSensorRegisters.SALINITY] else null,
+            tdsMgPerL = if (extended) registers[SoilSensorRegisters.TDS] else null,
         )
     }
 

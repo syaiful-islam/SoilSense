@@ -25,10 +25,11 @@ USB-RS485 yang dicolokkan ke ponsel dengan OTG. Menampilkan 7 parameter sesuai l
 
 - Modbus RTU, fungsi **0x03** (baca) dan **0x06** (tulis). Tabel di manual menulis "0x30/0x60",
   tetapi semua contoh frame di manual memakai 0x03/0x06 — itulah yang dipakai.
-- Register 0x0000–0x0006 dibaca dalam satu permintaan (sama dengan contoh di manual):
-  kelembapan (0,1 %), suhu (0,1 °C, *signed*), EC (µS/cm), pH (0,1), N, P, K (mg/kg).
-- Salinitas (0x0007) dan TDS (0x0008) di manual hanyalah turunan dari EC, bukan pengukuran,
-  jadi tidak dibaca.
+- Register 0x0000–0x0008 dibaca dalam satu permintaan: kelembapan (0,1 %), suhu (0,1 °C,
+  *signed*), EC (µS/cm), pH (0,1), N, P, K (mg/kg), salinitas dan TDS (mg/L).
+- Salinitas dan TDS dihitung sensor dari EC (× faktor 0,55 dan 0,50 di register 0x0023/0x0024),
+  jadi ditandai "dari EC". Bila firmware probe tidak punya register itu, aplikasi otomatis
+  membaca 7 register dan menyembunyikan dua kotak tersebut.
 - Semua 9 contoh frame di manual sudah dicek CRC-nya dan dijadikan test unit.
 
 ## Arsitektur

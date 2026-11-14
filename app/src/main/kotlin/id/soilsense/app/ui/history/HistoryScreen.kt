@@ -58,6 +58,7 @@ import id.soilsense.app.R
 import id.soilsense.app.data.model.RecordedReading
 import id.soilsense.app.ui.common.SoilMetric
 import id.soilsense.app.ui.common.formatMetricValue
+import id.soilsense.app.ui.common.visibleMetrics
 import id.soilsense.app.ui.common.rememberTimeFormatter
 import id.soilsense.app.ui.theme.SoilSenseTheme
 import id.soilsense.modbus.soil.SoilReading
@@ -238,7 +239,7 @@ private fun HistoryCard(item: RecordedReading, timestamp: String) {
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                SoilMetric.entries.forEach { metric -> MetricChip(metric, item.reading) }
+                visibleMetrics(item.reading).forEach { metric -> MetricChip(metric, item.reading) }
             }
         }
     }
@@ -258,7 +259,7 @@ private fun MetricChip(metric: SoilMetric, reading: SoilReading) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(metric.light))
         Spacer(Modifier.width(6.dp))
         Text(
-            stringResource(metric.shortLabel) + " " + formatMetricValue(metric.valueOf(reading)) + unit,
+            stringResource(metric.shortLabel) + " " + metric.valueOf(reading)?.let { formatMetricValue(it) }.orEmpty() + unit,
             style = MaterialTheme.typography.labelMedium,
         )
     }

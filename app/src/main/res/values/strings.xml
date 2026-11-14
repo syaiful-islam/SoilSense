@@ -54,6 +54,11 @@
     <string name="metric_short_temperature">Temp</string>
     <string name="metric_short_moisture">Moist.</string>
     <string name="metric_short_conductivity">EC</string>
+    <string name="metric_salinity">Salinity</string>
+    <string name="metric_short_salinity">Sal.</string>
+    <string name="metric_tds">TDS</string>
+    <string name="metric_from_ec">from EC</string>
+    <string name="unit_mg_l" translatable="false">mg/L</string>
     <string name="wiring_subtitle">Probe cable → USB-RS485 adapter</string>
     <string name="wiring_footer">Plug the adapter into the phone with an OTG cable. Sensor defaults: ID 1, 4800 bps, 8N1.</string>
     <string name="wire_brown">Brown</string>

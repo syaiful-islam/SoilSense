@@ -47,7 +47,7 @@ class ScreenshotCaptureTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val adapter = UsbAdapterInfo("CH34x", 0x1A86, 0x7523)
-    private val reading = SoilReading(42.2, 12.5, 1378, 7.9, 68, 96, 220)
+    private val reading = SoilReading(42.2, 12.5, 1378, 7.9, 68, 96, 220, salinityMgPerL = 758, tdsMgPerL = 689)
     private val now = 1_763_080_000_000L
 
     @Test

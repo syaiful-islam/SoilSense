@@ -46,6 +46,10 @@
     <string name="metric_short_temperature">Suhu</string>
     <string name="metric_short_moisture">Lembap</string>
     <string name="metric_short_conductivity">EC</string>
+    <string name="metric_salinity">Salinitas</string>
+    <string name="metric_short_salinity">Sal.</string>
+    <string name="metric_tds">TDS</string>
+    <string name="metric_from_ec">dari EC</string>
     <string name="wiring_subtitle">Kabel probe → adaptor USB-RS485</string>
     <string name="wiring_footer">Colokkan adaptor ke HP dengan kabel OTG. Bawaan sensor: ID 1, 4800 bps, 8N1.</string>
     <string name="wire_brown">Cokelat</string>

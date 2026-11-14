@@ -83,6 +83,7 @@ import id.soilsense.app.ui.common.formatMetricValue
 import id.soilsense.app.ui.common.label
 import id.soilsense.app.ui.common.rememberTimeFormatter
 import id.soilsense.app.ui.common.toText
+import id.soilsense.app.ui.common.visibleMetrics
 import id.soilsense.app.ui.theme.SoilSenseTheme
 import id.soilsense.modbus.soil.SoilReading
 
@@ -258,7 +259,7 @@ private fun StatusPill(text: String, dotColor: Color, modifier: Modifier = Modif
 private fun MetricGrid(reading: SoilReading?, modifier: Modifier = Modifier) {
     BoxWithConstraints(modifier) {
         val columns = if (maxWidth >= 600.dp) 4 else 2
-        val rows = SoilMetric.entries.chunked(columns)
+        val rows = visibleMetrics(reading).chunked(columns)
         val gap = 12.dp
         val fillHeight = if (constraints.hasBoundedHeight) (maxHeight - gap * (rows.size - 1)) / rows.size else 0.dp
         val tileHeight: Dp = maxOf(MIN_TILE_HEIGHT, fillHeight)
@@ -271,8 +272,7 @@ private fun MetricGrid(reading: SoilReading?, modifier: Modifier = Modifier) {
                     row.forEach { metric ->
                         MetricTile(metric, reading, Modifier.weight(1f).height(tileHeight))
                     }
-                    // A short last row (potassium on phones) keeps the column width; the probe has
-                    // only 7 parameters, so the remaining cell stays empty.
+                    // A short last row keeps the column width; the remaining cell stays empty.
                     repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
@@ -285,7 +285,7 @@ private val TileShape = RoundedCornerShape(22.dp)
 
 @Composable
 private fun MetricTile(metric: SoilMetric, reading: SoilReading?, modifier: Modifier = Modifier) {
-    val value = reading?.let { formatMetricValue(metric.valueOf(it)) }
+    val value = reading?.let { r -> metric.valueOf(r)?.let { formatMetricValue(it) } }
     Box(
         modifier
             .shadow(elevation = 6.dp, shape = TileShape, ambientColor = metric.dark, spotColor = metric.dark)
@@ -312,6 +312,10 @@ private fun MetricTile(metric: SoilMetric, reading: SoilReading?, modifier: Modi
                 if (metric == SoilMetric.PH && reading != null) {
                     Spacer(Modifier.width(8.dp))
                     TileChip(stringResource(PhClass.of(reading.ph).label))
+                }
+                if (metric.derivedFromEc) {
+                    Spacer(Modifier.width(8.dp))
+                    TileChip(stringResource(R.string.metric_from_ec))
                 }
             }
             Row(
@@ -533,6 +537,8 @@ internal val previewReading = SoilReading(
     nitrogenMgPerKg = 68,
     phosphorusMgPerKg = 96,
     potassiumMgPerKg = 220,
+    salinityMgPerL = 758,
+    tdsMgPerL = 689,
 )
 
 private val previewAdapter = UsbAdapterInfo("CH34x", 0x1A86, 0x7523)

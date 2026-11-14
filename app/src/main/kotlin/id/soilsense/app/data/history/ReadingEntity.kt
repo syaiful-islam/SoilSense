@@ -20,8 +20,7 @@ data class ReadingEntity(
     @ColumnInfo(name = "nitrogen_mg_kg") val nitrogenMgPerKg: Int,
     @ColumnInfo(name = "phosphorus_mg_kg") val phosphorusMgPerKg: Int,
     @ColumnInfo(name = "potassium_mg_kg") val potassiumMgPerKg: Int,
-    // Unused since the app reads only the probe's 7 measured parameters. Kept (always null) so the
-    // version-1 schema already installed on devices stays valid without a migration.
+    // Null when the probe's firmware does not expose salinity/TDS (registers 0x0007–0x0008).
     @ColumnInfo(name = "salinity_mg_l") val salinityMgPerL: Int? = null,
     @ColumnInfo(name = "tds_mg_l") val tdsMgPerL: Int? = null,
 )
@@ -38,6 +37,8 @@ fun ReadingEntity.toModel(): RecordedReading = RecordedReading(
         nitrogenMgPerKg = nitrogenMgPerKg,
         phosphorusMgPerKg = phosphorusMgPerKg,
         potassiumMgPerKg = potassiumMgPerKg,
+        salinityMgPerL = salinityMgPerL,
+        tdsMgPerL = tdsMgPerL,
     ),
 )
 
@@ -51,4 +52,6 @@ fun SoilReading.toEntity(timestampMillis: Long, name: String = ""): ReadingEntit
     nitrogenMgPerKg = nitrogenMgPerKg,
     phosphorusMgPerKg = phosphorusMgPerKg,
     potassiumMgPerKg = potassiumMgPerKg,
+    salinityMgPerL = salinityMgPerL,
+    tdsMgPerL = tdsMgPerL,
 )
