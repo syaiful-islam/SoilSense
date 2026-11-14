@@ -31,10 +31,29 @@ class ModbusFramesTest {
     }
 
     @Test
+    fun `write multiple matches the vendor frame for N factor 1_0`() {
+        // From the vendor Config Tool's "Reset N P K": N factor (0x04E8) = 1.0f = 3F80 0000.
+        assertContentEquals(
+            hex("01 10 04 E8 00 02 04 3F 80 00 00 C3 7D"),
+            ModbusFrames.writeMultipleRegisters(slaveId = 1, startAddress = 0x04E8, values = intArrayOf(0x3F80, 0x0000)),
+        )
+    }
+
+    @Test
+    fun `write single matches the vendor frame for resuming N measurement`() {
+        assertContentEquals(
+            hex("01 06 00 04 FF FF C9 BB"),
+            ModbusFrames.writeSingleRegister(slaveId = 1, address = 0x0004, value = 0xFFFF),
+        )
+    }
+
+    @Test
     fun `invalid arguments are rejected`() {
         assertFailsWith<IllegalArgumentException> { ModbusFrames.readHoldingRegisters(0, 0, 1) }
         assertFailsWith<IllegalArgumentException> { ModbusFrames.readHoldingRegisters(1, 0, 0) }
         assertFailsWith<IllegalArgumentException> { ModbusFrames.readHoldingRegisters(1, 0x10000, 1) }
         assertFailsWith<IllegalArgumentException> { ModbusFrames.writeSingleRegister(1, 0, 0x10000) }
+        assertFailsWith<IllegalArgumentException> { ModbusFrames.writeMultipleRegisters(1, 0, IntArray(0)) }
+        assertFailsWith<IllegalArgumentException> { ModbusFrames.writeMultipleRegisters(1, 0, intArrayOf(-1)) }
     }
 }

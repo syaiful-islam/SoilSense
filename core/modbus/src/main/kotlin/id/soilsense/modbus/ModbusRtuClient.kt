@@ -63,6 +63,21 @@ public class ModbusRtuClient(
         }
     }
 
+    /** Function 0x10. The slave answers with the start address and quantity it wrote. */
+    public suspend fun writeMultipleRegisters(slaveId: Int, startAddress: Int, values: IntArray) {
+        val request = ModbusFrames.writeMultipleRegisters(slaveId, startAddress, values)
+        val response = transact(
+            request = request,
+            slaveId = slaveId,
+            functionCode = ModbusFrames.FC_WRITE_MULTIPLE_REGISTERS,
+            normalLength = { _, _ -> WRITE_MULTIPLE_RESPONSE_LENGTH },
+        )
+        // Address, function, start address and quantity must match the first 6 request bytes.
+        if (!response.copyOf(6).contentEquals(request.copyOf(6))) {
+            throw ModbusException.UnexpectedResponse("Write-multiple reply ${response.toHex()} does not match request")
+        }
+    }
+
     private suspend fun transact(
         request: ByteArray,
         slaveId: Int,
@@ -131,6 +146,7 @@ public class ModbusRtuClient(
         private const val HEADER_LENGTH = 2 // slave address + function code
         private const val CRC_LENGTH = 2
         private const val EXCEPTION_FRAME_LENGTH = 5
+        private const val WRITE_MULTIPLE_RESPONSE_LENGTH = 8
         private const val EXCEPTION_FLAG = 0x80
 
         // Address + function + byte count + 255 data bytes + CRC; Modbus RTU frames never exceed 256 bytes.
