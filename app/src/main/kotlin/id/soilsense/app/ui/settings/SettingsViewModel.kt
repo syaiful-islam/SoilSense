@@ -8,16 +8,18 @@ import id.soilsense.app.data.model.SensorReadError
 import id.soilsense.app.data.model.SensorSettings
 import id.soilsense.app.data.sensor.ProbeChange
 import id.soilsense.app.data.sensor.SensorResult
-import id.soilsense.app.data.sensor.SlaveIdDetection
+import id.soilsense.app.data.sensor.ProbeSearch
 import id.soilsense.app.data.sensor.SoilSensorRepository
 import id.soilsense.app.data.settings.SettingsRepository
 import id.soilsense.modbus.soil.ProbeConfig
 import id.soilsense.modbus.soil.SoilSensorRegisters
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -27,7 +29,8 @@ import javax.inject.Inject
 sealed interface DetectionState {
     data object Idle : DetectionState
 
-    data object Running : DetectionState
+    /** @property slaveId null while asking through the 0xFF enquiry, else the address being tried. */
+    data class Running(val baudRate: Int? = null, val slaveId: Int? = null) : DetectionState
 
     data class Found(val slaveId: Int, val baudRate: Int) : DetectionState
 
@@ -39,6 +42,12 @@ sealed interface ProbeConfigProposal {
     data class SlaveId(val from: Int, val to: Int) : ProbeConfigProposal
 
     data class BaudRate(val from: Int, val to: Int) : ProbeConfigProposal
+
+    /** Back to slave ID 1 and 4800 bps. */
+    data class FactoryReset(val fromSlaveId: Int, val fromBaudRate: Int) : ProbeConfigProposal {
+        val toSlaveId: Int get() = SoilSensorRegisters.DEFAULT_SLAVE_ID
+        val toBaudRate: Int get() = SoilSensorRegisters.DEFAULT_BAUD_RATE
+    }
 }
 
 /** Last outcome shown in the "Configuration in the probe" card. */
@@ -59,6 +68,8 @@ data class ProbeConfigState(
     val isWriting: Boolean = false,
     val proposal: ProbeConfigProposal? = null,
     val message: ProbeConfigMessage? = null,
+    /** Outcome of the last factory reset, shown in its own card. */
+    val factoryMessage: ProbeConfigMessage? = null,
 )
 
 data class SettingsUiState(
@@ -96,7 +107,14 @@ class SettingsViewModel @Inject constructor(
             sensorRepository.connectionState
                 .map { it is ConnectionState.Connected }
                 .distinctUntilChanged()
-                .collect { connected -> if (connected) refreshProbeConfig() else probe.value = ProbeConfigState() }
+                .collect { connected ->
+                    if (connected) {
+                        refreshProbeConfig()
+                    } else {
+                        cancelDetection()
+                        probe.value = ProbeConfigState()
+                    }
+                }
         }
     }
 
@@ -119,15 +137,28 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setUseWallpaperColors(enabled) }
     }
 
+    private var searchJob: Job? = null
+
+    /** Searches for the probe (0xFF enquiry, then a scan of every address); see [cancelDetection]. */
     fun detectSlaveId() {
-        if (detection.value == DetectionState.Running) return
-        viewModelScope.launch {
-            detection.value = DetectionState.Running
-            detection.value = when (val result = sensorRepository.detectSlaveId()) {
-                is SlaveIdDetection.Found -> DetectionState.Found(result.slaveId, result.baudRate)
-                is SlaveIdDetection.Failed -> DetectionState.Failed(result.error)
+        if (searchJob?.isActive == true) return
+        detection.value = DetectionState.Running()
+        searchJob = viewModelScope.launch {
+            sensorRepository.searchProbe().collect { step ->
+                detection.value = when (step) {
+                    is ProbeSearch.Asking -> DetectionState.Running(baudRate = step.baudRate)
+                    is ProbeSearch.Scanning -> DetectionState.Running(baudRate = step.baudRate, slaveId = step.slaveId)
+                    is ProbeSearch.Found -> DetectionState.Found(step.slaveId, step.baudRate)
+                    is ProbeSearch.NotFound -> DetectionState.Failed(step.error)
+                }
             }
         }
+    }
+
+    fun cancelDetection() {
+        searchJob?.cancel()
+        searchJob = null
+        detection.value = DetectionState.Idle
     }
 
     /** Uses the detected slave ID and baud rate for the app, then reads the probe's settings with them. */
@@ -170,6 +201,20 @@ class SettingsViewModel @Inject constructor(
         probe.update { it.copy(proposal = ProbeConfigProposal.BaudRate(current, newBaudRate), message = null) }
     }
 
+    /** Asks for confirmation to put the probe back to slave ID 1 and 4800 bps. */
+    fun proposeFactoryReset() {
+        if (probe.value.isWriting || searchJob?.isActive == true) return
+        viewModelScope.launch {
+            val settings = settingsRepository.settings.first()
+            val config = probe.value.config
+            val proposal = ProbeConfigProposal.FactoryReset(
+                fromSlaveId = config?.slaveId ?: settings.slaveId,
+                fromBaudRate = config?.baudRate ?: settings.baudRate,
+            )
+            probe.update { it.copy(proposal = proposal, factoryMessage = null) }
+        }
+    }
+
     fun dismissProbeChange() {
         if (probe.value.isWriting) return
         probe.update { it.copy(proposal = null) }
@@ -183,13 +228,25 @@ class SettingsViewModel @Inject constructor(
             val result = when (proposal) {
                 is ProbeConfigProposal.SlaveId -> sensorRepository.changeProbeSlaveId(proposal.to)
                 is ProbeConfigProposal.BaudRate -> sensorRepository.changeProbeBaudRate(proposal.to)
+                is ProbeConfigProposal.FactoryReset -> sensorRepository.restoreProbeFactorySettings()
             }
-            probe.update {
-                when (result) {
-                    is ProbeChange.Verified -> it.copy(config = result.config, message = ProbeConfigMessage.Verified)
-                    ProbeChange.NeedsPowerCycle -> it.copy(config = null, message = ProbeConfigMessage.NeedsPowerCycle)
-                    is ProbeChange.Failed -> it.copy(message = ProbeConfigMessage.WriteFailed(result.error))
-                }.copy(isWriting = false, proposal = null)
+            val message = when (result) {
+                is ProbeChange.Verified -> ProbeConfigMessage.Verified
+                ProbeChange.NeedsPowerCycle -> ProbeConfigMessage.NeedsPowerCycle
+                is ProbeChange.Failed -> ProbeConfigMessage.WriteFailed(result.error)
+            }
+            probe.update { state ->
+                val config = when (result) {
+                    is ProbeChange.Verified -> result.config
+                    ProbeChange.NeedsPowerCycle -> null
+                    is ProbeChange.Failed -> state.config
+                }
+                val updated = state.copy(config = config, isWriting = false, proposal = null)
+                if (proposal is ProbeConfigProposal.FactoryReset) {
+                    updated.copy(factoryMessage = message)
+                } else {
+                    updated.copy(message = message)
+                }
             }
         }
     }

@@ -139,7 +139,7 @@
     <string name="settings_wallpaper_colors">Wallpaper colours</string>
     <string name="settings_wallpaper_colors_hint">Use Material You colours from your wallpaper (Android 12+) instead of the app’s blue palette.</string>
     <string name="settings_section_detect">Find probe</string>
-    <string name="settings_detect_body">Asks the probe for its slave ID through address 0xFF, trying 2400, 4800 and 9600 bps. Only one probe may be connected.</string>
+    <string name="settings_detect_body">Finds the probe\'s slave ID and baud rate: asks through address 0xFF, then if needed tries every ID 1–254 at 4800, 9600 and 2400 bps. Only one probe may be connected.</string>
     <string name="settings_detect_requires_connection">Connect the adapter first.</string>
     <string name="settings_detect_found">Found: ID %1$d · %2$d bps</string>
     <!-- Calibration tab -->
@@ -217,4 +217,17 @@
     <string name="settings_probe_confirm_baud_title">Change the probe\'s baud rate?</string>
     <string name="settings_probe_confirm_baud">%1$d → %2$d bps</string>
     <string name="settings_probe_confirm_note">Stored in the probe and kept after power off. The app switches to the new value too. If the probe stops answering, use Find probe.</string>
+    <!-- Find probe / factory settings -->
+    <string name="settings_detect_starting">Starting…</string>
+    <string name="settings_detect_asking">Asking through address 0xFF · %1$d bps</string>
+    <string name="settings_detect_scanning">Trying ID %1$d · %2$d bps</string>
+    <string name="settings_detect_duration">Trying every ID can take up to about 3 minutes.</string>
+    <string name="settings_detect_not_found">No probe found at ID 1–254 at 2400, 4800 or 9600 bps. Check the probe\'s power and the A/B wires (try swapping A and B).</string>
+    <string name="settings_section_factory">Factory settings</string>
+    <string name="settings_factory_body">Puts the probe\'s slave ID and baud rate back to the factory settings. Calibration is not changed.</string>
+    <string name="settings_factory_values_label">Factory values</string>
+    <string name="settings_factory_action">Restore factory settings</string>
+    <string name="settings_factory_confirm_title">Restore the probe\'s factory settings?</string>
+    <string name="settings_factory_confirm">ID %1$d → %2$d · %3$d → %4$d bps</string>
+    <string name="settings_factory_confirm_note">If the probe does not answer with the app\'s current settings, the app searches for it first (up to about 3 minutes).</string>
 </resources>

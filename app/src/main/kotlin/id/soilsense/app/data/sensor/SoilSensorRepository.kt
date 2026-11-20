@@ -27,11 +27,20 @@ interface SoilSensorRepository {
     fun liveReadings(): Flow<SensorSample>
 
     /**
-     * Finds the probe's slave ID and baud rate: asks through the 0xFF query address at the saved
-     * baud rate first, then at the other supported ones. Only one probe may be on the bus. The port
-     * is left at the saved baud rate; applying the result is up to the caller.
+     * Looks for the probe when its slave ID or baud rate is unknown. Only one probe may be on the bus.
+     *
+     * First asks through the 0xFF enquiry address at each baud rate (seconds), then scans every
+     * address 1–254 at each baud rate (up to ~3 minutes), emitting progress along the way and ending
+     * with [ProbeSearch.Found] or [ProbeSearch.NotFound]. Cancelling the collection stops the search.
+     * The port is left at the app's baud rate; applying the result is up to the caller.
      */
-    suspend fun detectSlaveId(): SlaveIdDetection
+    fun searchProbe(): Flow<ProbeSearch>
+
+    /**
+     * Sets the probe back to slave ID 1 and 4800 bps, searching for it first if it does not answer
+     * with the app's settings, and makes the app follow. Calibration is not touched.
+     */
+    suspend fun restoreProbeFactorySettings(): ProbeChange
 
     /** Reads the slave ID and baud rate stored inside the probe. */
     suspend fun readProbeConfig(): SensorResult<ProbeConfig>
@@ -65,10 +74,16 @@ sealed interface SensorResult<out T> {
     data class Failure(val error: SensorReadError) : SensorResult<Nothing>
 }
 
-sealed interface SlaveIdDetection {
-    data class Found(val slaveId: Int, val baudRate: Int) : SlaveIdDetection
+sealed interface ProbeSearch {
+    /** Asking through the 0xFF enquiry address. */
+    data class Asking(val baudRate: Int) : ProbeSearch
 
-    data class Failed(val error: SensorReadError) : SlaveIdDetection
+    /** Trying one address. */
+    data class Scanning(val slaveId: Int, val baudRate: Int) : ProbeSearch
+
+    data class Found(val slaveId: Int, val baudRate: Int) : ProbeSearch
+
+    data class NotFound(val error: SensorReadError) : ProbeSearch
 }
 
 /** Outcome of changing the probe's slave ID or baud rate. */

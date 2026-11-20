@@ -11,7 +11,7 @@ import id.soilsense.app.data.model.UsbAdapterInfo
 import id.soilsense.app.data.model.SensorReadError
 import id.soilsense.app.data.sensor.SensorResult
 import id.soilsense.app.data.sensor.ProbeChange
-import id.soilsense.app.data.sensor.SlaveIdDetection
+import id.soilsense.app.data.sensor.ProbeSearch
 import id.soilsense.app.data.sensor.SoilSensorRepository
 import id.soilsense.app.data.settings.SettingsRepository
 import id.soilsense.modbus.soil.CalibrationSettings
@@ -23,6 +23,7 @@ import id.soilsense.modbus.soil.Nutrient
 import id.soilsense.modbus.soil.OffsetParameter
 import id.soilsense.modbus.soil.SoilReading
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,7 +51,6 @@ val testReading = SoilReading(
 class FakeSoilSensorRepository : SoilSensorRepository {
     override val connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected(testAdapter))
     private val samples = MutableSharedFlow<SensorSample>()
-    var detectionResult: SlaveIdDetection = SlaveIdDetection.Found(1, 4800)
     var connectCalls = 0
         private set
 
@@ -67,7 +67,19 @@ class FakeSoilSensorRepository : SoilSensorRepository {
 
     override fun liveReadings(): Flow<SensorSample> = samples
 
-    override suspend fun detectSlaveId(): SlaveIdDetection = detectionResult
+    /** What [searchProbe] emits; replace with a never-ending flow to test cancelling. */
+    var searchFlow: Flow<ProbeSearch> = flowOf(ProbeSearch.Asking(4800), ProbeSearch.Found(1, 4800))
+
+    override fun searchProbe(): Flow<ProbeSearch> = searchFlow
+
+    var factoryResult: ProbeChange = ProbeChange.Verified(ProbeConfig(slaveId = 1, baudRate = 4800))
+    var factoryResets = 0
+        private set
+
+    override suspend fun restoreProbeFactorySettings(): ProbeChange {
+        factoryResets++
+        return factoryResult
+    }
 
     var probeConfig: ProbeConfig = ProbeConfig(slaveId = 1, baudRate = 4800)
     var probeReadFailure: SensorReadError? = null

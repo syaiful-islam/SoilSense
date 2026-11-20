@@ -2,13 +2,17 @@ package id.soilsense.app.ui.settings
 
 import id.soilsense.app.data.model.SensorReadError
 import id.soilsense.app.data.sensor.ProbeChange
-import id.soilsense.app.data.sensor.SlaveIdDetection
+import id.soilsense.app.data.sensor.ProbeSearch
 import id.soilsense.app.testing.FakeSettingsRepository
 import id.soilsense.app.testing.FakeSoilSensorRepository
 import id.soilsense.app.testing.MainDispatcherRule
 import id.soilsense.modbus.soil.ProbeConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -17,6 +21,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -32,11 +37,17 @@ class SettingsViewModelTest {
     private val viewModel by lazy { SettingsViewModel(settings, sensor) }
 
     @Test
-    fun `detected id can be applied to settings`() = runTest {
+    fun `search reports progress and the found id can be applied`() = runTest {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
-        sensor.detectionResult = SlaveIdDetection.Found(5, 9600)
-
+        val steps = MutableSharedFlow<ProbeSearch>()
+        sensor.searchFlow = steps
         viewModel.detectSlaveId()
+
+        steps.emit(ProbeSearch.Asking(4800))
+        assertEquals(DetectionState.Running(baudRate = 4800), viewModel.uiState.value.detection)
+        steps.emit(ProbeSearch.Scanning(slaveId = 4, baudRate = 9600))
+        assertEquals(DetectionState.Running(baudRate = 9600, slaveId = 4), viewModel.uiState.value.detection)
+        steps.emit(ProbeSearch.Found(slaveId = 5, baudRate = 9600))
         assertEquals(DetectionState.Found(5, 9600), viewModel.uiState.value.detection)
 
         viewModel.applyDetectedSlaveId()
@@ -46,13 +57,34 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `failed detection is reported`() = runTest {
+    fun `failed search is reported`() = runTest {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
-        sensor.detectionResult = SlaveIdDetection.Failed(SensorReadError.NoResponse)
+        sensor.searchFlow = flowOf(ProbeSearch.NotFound(SensorReadError.NoResponse))
 
         viewModel.detectSlaveId()
 
         assertEquals(DetectionState.Failed(SensorReadError.NoResponse), viewModel.uiState.value.detection)
+    }
+
+    @Test
+    fun `search can be cancelled`() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+        var cancelled = false
+        sensor.searchFlow = flow {
+            emit(ProbeSearch.Scanning(slaveId = 1, baudRate = 4800))
+            try {
+                awaitCancellation()
+            } finally {
+                cancelled = true
+            }
+        }
+        viewModel.detectSlaveId()
+        assertIs<DetectionState.Running>(viewModel.uiState.value.detection)
+
+        viewModel.cancelDetection()
+
+        assertTrue(cancelled)
+        assertEquals(DetectionState.Idle, viewModel.uiState.value.detection)
     }
 
     @Test
@@ -180,5 +212,56 @@ class SettingsViewModelTest {
         viewModel.proposeProbeSlaveId(2)
         viewModel.proposeProbeBaudRate(9600)
         assertNull(probeState.proposal)
+    }
+
+    @Test
+    fun `factory reset waits for confirmation and shows its outcome in its own card`() = runTest {
+        connected()
+        sensor.probeConfig = ProbeConfig(slaveId = 7, baudRate = 9600)
+        viewModel.refreshProbeConfig()
+
+        viewModel.proposeFactoryReset()
+        assertEquals(ProbeConfigProposal.FactoryReset(fromSlaveId = 7, fromBaudRate = 9600), probeState.proposal)
+        assertEquals(0, sensor.factoryResets)
+
+        viewModel.confirmProbeChange()
+
+        assertEquals(1, sensor.factoryResets)
+        assertEquals(ProbeConfigMessage.Verified, probeState.factoryMessage)
+        assertNull(probeState.message)
+        assertEquals(ProbeConfig(1, 4800), probeState.config)
+    }
+
+    @Test
+    fun `factory reset can be proposed when the probe could not be read`() = runTest {
+        sensor.probeReadFailure = SensorReadError.NoResponse
+        connected()
+
+        viewModel.proposeFactoryReset()
+
+        assertEquals(ProbeConfigProposal.FactoryReset(fromSlaveId = 1, fromBaudRate = 4800), probeState.proposal)
+    }
+
+    @Test
+    fun `factory reset that needs a power cycle says so`() = runTest {
+        connected()
+        sensor.factoryResult = ProbeChange.NeedsPowerCycle
+
+        viewModel.proposeFactoryReset()
+        viewModel.confirmProbeChange()
+
+        assertEquals(ProbeConfigMessage.NeedsPowerCycle, probeState.factoryMessage)
+        assertNull(probeState.config)
+    }
+
+    @Test
+    fun `dismissed factory reset writes nothing`() = runTest {
+        connected()
+
+        viewModel.proposeFactoryReset()
+        viewModel.dismissProbeChange()
+
+        assertNull(probeState.proposal)
+        assertEquals(0, sensor.factoryResets)
     }
 }

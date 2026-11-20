@@ -2,6 +2,8 @@ package id.soilsense.modbus.soil
 
 import id.soilsense.modbus.ModbusException
 import id.soilsense.modbus.ModbusRtuClient
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * High-level access to the 7-in-1 soil probe.
@@ -37,13 +39,39 @@ public class SoilSensor(private val client: ModbusRtuClient) {
         return SoilReadingDecoder.decode(registers)
     }
 
-    /** Reads the probe's configured slave ID through the 0xFF query address (only one probe may be on the bus). */
-    public suspend fun queryAddress(): Int =
-        client.readHoldingRegisters(
-            slaveId = SoilSensorRegisters.BROADCAST_QUERY_ADDRESS,
+    /**
+     * Asks "who is there?" through the 0xFF enquiry address (manual: "Enquiry slave ID") and returns
+     * the slave ID the probe reports. The reply may come from 0xFF or from the probe's real address.
+     * Only one probe may be on the bus.
+     */
+    public suspend fun queryAddress(timeout: Duration = ModbusRtuClient.DEFAULT_RESPONSE_TIMEOUT): Int {
+        val reply = client.readHoldingRegistersFromAnyAddress(
+            requestAddress = SoilSensorRegisters.BROADCAST_QUERY_ADDRESS,
             startAddress = SoilSensorRegisters.SLAVE_ID,
             quantity = 1,
-        ).first()
+            timeout = timeout,
+        )
+        val stored = reply.registers.first()
+        return when {
+            stored in SoilSensorRegisters.SLAVE_ID_RANGE -> stored
+            reply.slaveId in SoilSensorRegisters.SLAVE_ID_RANGE -> reply.slaveId
+            else -> throw ModbusException.UnexpectedResponse("Enquiry reply reports slave ID $stored")
+        }
+    }
+
+    /**
+     * Whether a probe answers at [slaveId] within [timeout]. An exception reply counts too: something
+     * with that address is on the bus. Used to scan addresses when the 0xFF enquiry gets no answer.
+     */
+    public suspend fun answersAt(slaveId: Int, timeout: Duration = SCAN_TIMEOUT): Boolean =
+        try {
+            client.readHoldingRegisters(slaveId, SoilSensorRegisters.SLAVE_ID, quantity = 1, timeout = timeout)
+            true
+        } catch (_: ModbusException.ExceptionResponse) {
+            true
+        } catch (_: ModbusException) {
+            false
+        }
 
     /** Reads the slave ID and baud rate stored in the probe, one register at a time like the vendor tool. */
     public suspend fun readProbeConfig(slaveId: Int): ProbeConfig = ProbeConfig(
@@ -133,6 +161,12 @@ public class SoilSensor(private val client: ModbusRtuClient) {
     private companion object {
         /** Written to an N/P/K data register, makes the probe measure again instead of holding a written value. */
         const val NPK_RESUME_MEASURING = 0xFFFF
+
+        /**
+         * Per-address wait while scanning. A 7-byte reply takes ~30 ms on the wire at 2400 bps; the
+         * rest is margin for the probe's processing time. 254 addresses × 3 baud rates ≈ 3 minutes.
+         */
+        val SCAN_TIMEOUT: Duration = 250.milliseconds
     }
 
     private suspend fun readBasic(slaveId: Int): SoilReading =

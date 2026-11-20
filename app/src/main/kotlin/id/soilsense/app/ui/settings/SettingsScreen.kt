@@ -26,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -50,8 +51,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -87,7 +90,9 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
             onProposeBaudRate = viewModel::proposeProbeBaudRate,
             onConfirm = viewModel::confirmProbeChange,
             onDismiss = viewModel::dismissProbeChange,
+            onProposeFactoryReset = viewModel::proposeFactoryReset,
         ),
+        onCancelDetection = viewModel::cancelDetection,
     )
 }
 
@@ -98,6 +103,7 @@ data class ProbeConfigActions(
     val onProposeBaudRate: (Int) -> Unit = {},
     val onConfirm: () -> Unit = {},
     val onDismiss: () -> Unit = {},
+    val onProposeFactoryReset: () -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -112,6 +118,7 @@ fun SettingsScreen(
     onApplyDetectedSlaveId: () -> Unit,
     modifier: Modifier = Modifier,
     probeActions: ProbeConfigActions = ProbeConfigActions(),
+    onCancelDetection: () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -143,8 +150,15 @@ fun SettingsScreen(
                     detection = uiState.detection,
                     onDetect = onDetectSlaveId,
                     onApply = onApplyDetectedSlaveId,
+                    onCancel = onCancelDetection,
                 )
             }
+            FactorySettingsCard(
+                isConnected = uiState.isConnected,
+                enabled = !uiState.probe.isWriting && uiState.detection !is DetectionState.Running,
+                message = uiState.probe.factoryMessage,
+                onReset = probeActions.onProposeFactoryReset,
+            )
             SettingsCard(R.string.settings_section_appearance) {
                 WallpaperColorsSwitch(checked = settings.useWallpaperColors, onCheckedChange = onWallpaperColorsChange)
             }
@@ -358,6 +372,13 @@ private fun ProbeChangeDialog(proposal: ProbeConfigProposal, isWriting: Boolean,
             R.string.settings_probe_confirm_id_title to stringResource(R.string.settings_probe_confirm_id, proposal.from, proposal.to)
         is ProbeConfigProposal.BaudRate ->
             R.string.settings_probe_confirm_baud_title to stringResource(R.string.settings_probe_confirm_baud, proposal.from, proposal.to)
+        is ProbeConfigProposal.FactoryReset -> R.string.settings_factory_confirm_title to stringResource(
+            R.string.settings_factory_confirm,
+            proposal.fromSlaveId,
+            proposal.toSlaveId,
+            proposal.fromBaudRate,
+            proposal.toBaudRate,
+        )
     }
     AlertDialog(
         onDismissRequest = { if (!isWriting) onDismiss() },
@@ -365,6 +386,9 @@ private fun ProbeChangeDialog(proposal: ProbeConfigProposal, isWriting: Boolean,
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(change, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                if (proposal is ProbeConfigProposal.FactoryReset) {
+                    Text(stringResource(R.string.settings_factory_confirm_note), style = MaterialTheme.typography.bodyMedium)
+                }
                 Text(stringResource(R.string.settings_probe_confirm_note), style = MaterialTheme.typography.bodyMedium)
             }
         },
@@ -476,17 +500,14 @@ private fun DetectSlaveId(
     detection: DetectionState,
     onDetect: () -> Unit,
     onApply: () -> Unit,
+    onCancel: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.settings_detect_body), style = MaterialTheme.typography.bodyMedium)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedButton(onClick = onDetect, enabled = isConnected && detection != DetectionState.Running) {
-                Text(stringResource(R.string.action_detect))
-            }
-            Spacer(Modifier.width(12.dp))
-            if (detection == DetectionState.Running) {
-                CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 3.dp)
-            }
+        if (detection is DetectionState.Running) {
+            SearchProgress(detection, onCancel)
+        } else {
+            OutlinedButton(onClick = onDetect, enabled = isConnected) { Text(stringResource(R.string.action_detect)) }
         }
         if (!isConnected) {
             Text(
@@ -497,22 +518,81 @@ private fun DetectSlaveId(
         }
         when (detection) {
             is DetectionState.Found -> Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    painterResource(R.drawable.ic_check_circle),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(8.dp))
                 Text(
                     stringResource(R.string.settings_detect_found, detection.slaveId, detection.baudRate),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(onClick = onApply) { Text(stringResource(R.string.action_use_detected_id)) }
+                Button(onClick = onApply) { Text(stringResource(R.string.action_use_detected_id)) }
             }
-            is DetectionState.Failed -> {
-                val text = detection.error.toText()
-                Text(
-                    if (text.code != null) stringResource(text.title, text.code) else stringResource(text.title),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-            DetectionState.Idle, DetectionState.Running -> Unit
+            is DetectionState.Failed -> Text(
+                if (detection.error == SensorReadError.NoResponse) {
+                    stringResource(R.string.settings_detect_not_found)
+                } else {
+                    errorText(detection.error)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+            DetectionState.Idle, is DetectionState.Running -> Unit
+        }
+    }
+}
+
+@Composable
+private fun SearchProgress(running: DetectionState.Running, onCancel: () -> Unit) {
+    val status = when {
+        running.baudRate == null -> stringResource(R.string.settings_detect_starting)
+        running.slaveId == null -> stringResource(R.string.settings_detect_asking, running.baudRate)
+        else -> stringResource(R.string.settings_detect_scanning, running.slaveId, running.baudRate)
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LinearProgressIndicator(Modifier.fillMaxWidth())
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                status,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
+            )
+            TextButton(onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
+        }
+        Text(
+            stringResource(R.string.settings_detect_duration),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun FactorySettingsCard(isConnected: Boolean, enabled: Boolean, message: ProbeConfigMessage?, onReset: () -> Unit) {
+    SettingsCard(R.string.settings_section_factory) {
+        Text(stringResource(R.string.settings_factory_body), style = MaterialTheme.typography.bodyMedium)
+        Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
+            Text(stringResource(R.string.settings_factory_values_label), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+            Text(
+                stringResource(R.string.settings_probe_config, SoilSensorRegisters.DEFAULT_SLAVE_ID, SoilSensorRegisters.DEFAULT_BAUD_RATE),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        message?.let { ProbeMessage(it) }
+        OutlinedButton(onClick = onReset, enabled = isConnected && enabled, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.settings_factory_action))
+        }
+        if (!isConnected) {
+            Text(
+                stringResource(R.string.settings_detect_requires_connection),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

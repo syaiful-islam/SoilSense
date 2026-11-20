@@ -182,6 +182,24 @@ class ScreenshotCaptureTest {
     }
 
     @Test
+    fun settingsSearchAndFactory() = capture("12_settings_search_factory", TopLevelDestination.SETTINGS, scrollToText = "Factory values") {
+        SettingsScreen(
+            uiState = SettingsUiState(
+                settings = SensorSettings(),
+                isConnected = true,
+                detection = DetectionState.Running(baudRate = 9600, slaveId = 37),
+                probe = ProbeConfigState(factoryMessage = ProbeConfigMessage.Verified),
+            ),
+            onSlaveIdChange = {},
+            onBaudRateChange = {},
+            onPollIntervalChange = {},
+            onWallpaperColorsChange = {},
+            onDetectSlaveId = {},
+            onApplyDetectedSlaveId = {},
+        )
+    }
+
+    @Test
     fun calibrationNpk() = capture("8_calibration_npk", TopLevelDestination.CALIBRATION) {
         CalibrationScreen(
             uiState = CalibrationUiState(

@@ -20,6 +20,7 @@ import id.soilsense.modbus.soil.SoilSensor
 import id.soilsense.modbus.soil.SoilSensorRegisters
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -38,6 +39,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -161,26 +163,130 @@ class UsbSoilSensorRepository @Inject constructor(
             .distinctUntilChanged()
             .flatMapLatest { config -> if (config.connected) poll(config) else emptyFlow() }
 
-    override suspend fun detectSlaveId(): SlaveIdDetection = probeMutex.withLock {
-        val current = session ?: return SlaveIdDetection.Failed(SensorReadError.NotConnected)
-        val savedBaud = settingsRepository.settings.first().baudRate
-        val candidates = listOf(savedBaud) + (SoilSensorRegisters.SUPPORTED_BAUD_RATES - savedBaud)
-        var lastError: SensorReadError = SensorReadError.NoResponse
-        try {
-            for (baud in candidates) {
-                current.transport.configure(baud)
-                try {
-                    return SlaveIdDetection.Found(current.sensor.queryAddress(), baud)
-                } catch (e: ModbusException) {
-                    lastError = e.toReadError()
-                }
+    override fun searchProbe(): Flow<ProbeSearch> = flow {
+        probeMutex.withLock {
+            val current = session
+            if (current == null) {
+                emit(ProbeSearch.NotFound(SensorReadError.NotConnected))
+                return@withLock
             }
-            SlaveIdDetection.Failed(lastError)
-        } catch (_: IOException) {
-            SlaveIdDetection.Failed(onIoFailure(current))
-        } finally {
-            restoreBaud(current, savedBaud)
+            val saved = settingsRepository.settings.first()
+            try {
+                val found = findProbe(current, saved.slaveId, saved.baudRate) { emit(it) }
+                emit(found ?: ProbeSearch.NotFound(SensorReadError.NoResponse))
+            } catch (_: IOException) {
+                emit(ProbeSearch.NotFound(onIoFailure(current)))
+            } finally {
+                // Also on cancel ("Cancel" button): the port must go back to what the app uses.
+                withContext(NonCancellable) { restoreBaud(current, saved.baudRate) }
+            }
         }
+    }
+
+    /**
+     * Asks through the 0xFF enquiry at each baud rate, then scans every address. The likeliest
+     * settings come first: the app's own, then the factory ones. Leaves the port at the baud rate
+     * where the probe was found (or the last one tried).
+     */
+    private suspend fun findProbe(
+        current: Session,
+        savedSlaveId: Int,
+        savedBaudRate: Int,
+        onProgress: suspend (ProbeSearch) -> Unit,
+    ): ProbeSearch.Found? {
+        val baudRates = (listOf(savedBaudRate, SoilSensorRegisters.DEFAULT_BAUD_RATE) + SEARCH_BAUD_ORDER).distinct()
+        for (baud in baudRates) {
+            onProgress(ProbeSearch.Asking(baud))
+            current.transport.configure(baud)
+            try {
+                return ProbeSearch.Found(current.sensor.queryAddress(), baud)
+            } catch (_: ModbusException) {
+                // This probe may ignore 0xFF or use another baud rate; keep looking.
+            }
+        }
+        val slaveIds = (listOf(savedSlaveId, SoilSensorRegisters.DEFAULT_SLAVE_ID) + SoilSensorRegisters.SLAVE_ID_RANGE).distinct()
+        for (baud in baudRates) {
+            current.transport.configure(baud)
+            for (slaveId in slaveIds) {
+                onProgress(ProbeSearch.Scanning(slaveId, baud))
+                if (current.sensor.answersAt(slaveId)) return ProbeSearch.Found(slaveId, baud)
+            }
+        }
+        return null
+    }
+
+    override suspend fun restoreProbeFactorySettings(): ProbeChange = probeMutex.withLock {
+        val current = session ?: return ProbeChange.Failed(SensorReadError.NotConnected)
+        val saved = settingsRepository.settings.first()
+        val factoryId = SoilSensorRegisters.DEFAULT_SLAVE_ID
+        val factoryBaud = SoilSensorRegisters.DEFAULT_BAUD_RATE
+        try {
+            // 1. Reach the probe: with the app's settings, otherwise search for it.
+            var slaveId = saved.slaveId
+            var baud = saved.baudRate
+            if (!current.sensor.answersAt(slaveId, ModbusRtuClient.DEFAULT_RESPONSE_TIMEOUT)) {
+                val found = findProbe(current, saved.slaveId, saved.baudRate) {}
+                if (found == null) {
+                    restoreBaud(current, saved.baudRate)
+                    return ProbeChange.Failed(SensorReadError.NoResponse)
+                }
+                slaveId = found.slaveId
+                baud = found.baudRate
+                current.transport.configure(baud)
+            }
+
+            // 2. Slave ID, then 3. baud rate, each at the settings the probe answers on right now.
+            if (slaveId != factoryId) {
+                writeIgnoringEcho { current.sensor.writeSlaveId(slaveId, factoryId) }
+                if (current.sensor.answersAt(factoryId, ModbusRtuClient.DEFAULT_RESPONSE_TIMEOUT)) slaveId = factoryId
+            }
+            if (baud != factoryBaud) writeIgnoringEcho { current.sensor.writeBaudRate(slaveId, factoryBaud) }
+
+            // 4. Check at the factory settings.
+            current.transport.configure(factoryBaud)
+            current.sensor.tryReadConfig(factoryId)?.let {
+                followProbe(current, factoryId, factoryBaud)
+                return ProbeChange.Verified(it)
+            }
+            current.transport.configure(baud)
+            val stored = current.sensor.tryReadConfig(slaveId)
+            if (stored != null && (stored.slaveId != factoryId || stored.baudRate != factoryBaud)) {
+                // The probe kept (part of) its old settings: stay where it still answers.
+                followProbe(current, slaveId, baud)
+                return ProbeChange.Failed(SensorReadError.NoResponse)
+            }
+            followProbe(current, factoryId, factoryBaud)
+            ProbeChange.NeedsPowerCycle
+        } catch (e: ProbeWriteRejected) {
+            restoreBaud(current, saved.baudRate)
+            ProbeChange.Failed(e.error)
+        } catch (_: IOException) {
+            ProbeChange.Failed(onIoFailure(current))
+        }
+    }
+
+    /**
+     * Sends a configuration write. A rejection is final; any other problem with the echo is not,
+     * because the probe may already answer at its new settings, so the caller checks afterwards.
+     */
+    private suspend fun writeIgnoringEcho(write: suspend () -> Unit) {
+        try {
+            write()
+        } catch (e: ModbusException.ExceptionResponse) {
+            throw ProbeWriteRejected(e.toReadError())
+        } catch (_: ModbusException) {
+            // Checked by the caller.
+        }
+    }
+
+    private class ProbeWriteRejected(val error: SensorReadError) : Exception()
+
+    /** Makes the app use the settings the probe answers on; the port is switched right away. */
+    private suspend fun followProbe(current: Session, slaveId: Int, baudRate: Int) {
+        current.transport.configure(baudRate)
+        settingsRepository.setSlaveId(slaveId)
+        settingsRepository.setBaudRate(baudRate)
+        if (session === current) _connectionState.value = ConnectionState.Connected(current.info, baudRate)
     }
 
     override suspend fun readProbeConfig(): SensorResult<ProbeConfig> =
@@ -370,5 +476,8 @@ class UsbSoilSensorRepository @Inject constructor(
 
     private companion object {
         const val PERMISSION_PROMPT_GRACE_MILLIS = 1_500L
+
+        /** After the app's and the factory baud rate: faster scans first. */
+        val SEARCH_BAUD_ORDER = listOf(9600, 2400)
     }
 }

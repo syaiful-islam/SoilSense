@@ -88,4 +88,45 @@ class SoilSensorTest {
         assertEquals(1, sensor.queryAddress())
         assertContentEquals(hex("FF 03 07 D0 00 01 91 59"), transport.writtenFrames.single())
     }
+
+    @Test
+    fun `queryAddress accepts a reply from the probe's real address`() = runTest {
+        // Field probes answer the 0xFF enquiry from their own address, not from 0xFF as in the manual.
+        transport.enqueueReply(Crc16.appendCrc(hex("05 03 02 00 05")))
+
+        assertEquals(5, sensor.queryAddress())
+    }
+
+    @Test
+    fun `queryAddress skips a stray 0xFF byte from the adapter`() = runTest {
+        transport.enqueueReply(hex("FF") + Crc16.appendCrc(hex("01 03 02 00 01")))
+
+        assertEquals(1, sensor.queryAddress())
+    }
+
+    @Test
+    fun `queryAddress skips stray bytes before an answer from 0xFF`() = runTest {
+        transport.enqueueReply(hex("00 7E") + hex("FF 03 02 00 01 50 50"))
+
+        assertEquals(1, sensor.queryAddress())
+    }
+
+    @Test
+    fun `queryAddress times out when nothing answers`() = runTest {
+        transport.enqueueReply(null)
+
+        assertFailsWith<ModbusException.ResponseTimeout> { sensor.queryAddress() }
+    }
+
+    @Test
+    fun `answersAt is true for a reply or an exception and false for silence`() = runTest {
+        transport.enqueueReply(Crc16.appendCrc(hex("07 03 02 00 07")))
+        transport.enqueueReply(Crc16.appendCrc(hex("08 83 02")))
+        transport.enqueueReply(null)
+
+        assertEquals(true, sensor.answersAt(7))
+        assertEquals(true, sensor.answersAt(8))
+        assertEquals(false, sensor.answersAt(9))
+        assertContentEquals(hex("07 03 07 D0 00 01"), transport.writtenFrames.first().copyOf(6))
+    }
 }

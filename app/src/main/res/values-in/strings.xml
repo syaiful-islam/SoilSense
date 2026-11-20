@@ -110,7 +110,7 @@
     <string name="settings_wallpaper_colors">Warna dari wallpaper</string>
     <string name="settings_wallpaper_colors_hint">Pakai warna Material You dari wallpaper (Android 12+) sebagai ganti palet biru aplikasi.</string>
     <string name="settings_section_detect">Cari probe</string>
-    <string name="settings_detect_body">Menanyakan ID slave ke probe lewat alamat 0xFF, mencoba 2400, 4800 dan 9600 bps. Hanya boleh satu probe yang terhubung.</string>
+    <string name="settings_detect_body">Mencari ID slave dan baud rate probe: bertanya lewat alamat 0xFF, lalu bila perlu memeriksa ID 1–254 di 4800, 9600 dan 2400 bps. Hanya boleh satu probe yang terhubung.</string>
     <string name="settings_detect_requires_connection">Hubungkan adaptor terlebih dahulu.</string>
     <string name="settings_detect_found">Ditemukan: ID %1$d · %2$d bps</string>
     <!-- Tab kalibrasi -->
@@ -181,4 +181,17 @@
     <string name="settings_probe_confirm_baud_title">Ubah baud rate probe?</string>
     <string name="settings_probe_confirm_baud">%1$d → %2$d bps</string>
     <string name="settings_probe_confirm_note">Disimpan di probe dan tetap ada walau listrik dimatikan. Aplikasi ikut memakai nilai baru. Bila probe tidak lagi menjawab, gunakan Cari probe.</string>
+    <!-- Cari probe / setelan pabrik -->
+    <string name="settings_detect_starting">Memulai…</string>
+    <string name="settings_detect_asking">Bertanya lewat alamat 0xFF · %1$d bps</string>
+    <string name="settings_detect_scanning">Memeriksa ID %1$d · %2$d bps</string>
+    <string name="settings_detect_duration">Memeriksa semua ID bisa memakan waktu hingga sekitar 3 menit.</string>
+    <string name="settings_detect_not_found">Probe tidak ditemukan di ID 1–254 pada 2400, 4800 maupun 9600 bps. Periksa daya probe dan kabel A/B (coba tukar A dan B).</string>
+    <string name="settings_section_factory">Setelan pabrik</string>
+    <string name="settings_factory_body">Mengembalikan ID slave dan baud rate probe ke setelan pabrik. Kalibrasi tidak berubah.</string>
+    <string name="settings_factory_values_label">Nilai pabrik</string>
+    <string name="settings_factory_action">Kembalikan ke setelan pabrik</string>
+    <string name="settings_factory_confirm_title">Kembalikan probe ke setelan pabrik?</string>
+    <string name="settings_factory_confirm">ID %1$d → %2$d · %3$d → %4$d bps</string>
+    <string name="settings_factory_confirm_note">Bila probe tidak menjawab dengan pengaturan aplikasi sekarang, aplikasi mencarinya dulu (bisa sampai sekitar 3 menit).</string>
 </resources>
